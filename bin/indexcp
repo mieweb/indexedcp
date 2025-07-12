@@ -44,7 +44,7 @@ async function handleAdd(args) {
   
   if (!filePath) {
     console.error('Error: File path is required');
-    console.log('Usage: indexcp add <file-path>');
+    console.log('Usage: indexCP add <file-path>');
     process.exit(1);
   }
 
@@ -86,7 +86,7 @@ async function handleUpload(args) {
   
   if (!serverUrl) {
     console.error('Error: Server URL is required');
-    console.log('Usage: indexcp upload <server-url> [--api-key <key>]');
+    console.log('Usage: indexCP upload <server-url> [--api-key <key>]');
     process.exit(1);
   }
 
@@ -154,10 +154,10 @@ function showHelp() {
 IndexCP - Secure, resumable file transfer with IndexedDB buffering
 
 Usage:
-  indexcp add <file-path>                      Add a file to the buffer
-  indexcp upload <server-url> [--api-key <key>]  Upload buffered files to server
-  indexcp server [port] [output-dir] [--api-key <key>]  Start upload server (default port: 3000)
-  indexcp help                                Show this help message
+  indexCP add <file-path>                      Add a file to the buffer
+  indexCP upload <server-url> [--api-key <key>]  Upload buffered files to server
+  indexCP server [port] [output-dir] [--api-key <key>]  Start upload server (default port: 3000)
+  indexCP help                                Show this help message
 
 API Key Options:
   --api-key <key>     Specify API key (NOT recommended for security)
@@ -165,9 +165,9 @@ API Key Options:
   Auto-prompt:        If no API key provided, you will be prompted
 
 Examples:
-  indexcp add ./myfile.txt
-  indexcp upload http://localhost:3000/upload
-  indexcp server 3000 ./uploads
+  indexCP add ./myfile.txt
+  indexCP upload http://localhost:3000/upload
+  indexCP server 3000 ./uploads
   
   # Using environment variable (recommended):
   export INDEXCP_API_KEY=your-api-key-here
