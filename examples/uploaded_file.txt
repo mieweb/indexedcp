@@ -1,0 +1,3 @@
+This is the myfile.txt that the example references.
+It contains test content for the IndexCP file transfer demonstration.
+This file will be chunked and uploaded to demonstrate the functionality.

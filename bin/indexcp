@@ -1,0 +1,130 @@
+#!/usr/bin/env node
+
+const IndexCPClient = require('../lib/client');
+const { IndexCPServer } = require('../lib/server');
+const path = require('path');
+const fs = require('fs');
+
+const args = process.argv.slice(2);
+const command = args[0];
+
+async function main() {
+  if (!command) {
+    showHelp();
+    return;
+  }
+
+  switch (command) {
+    case 'add':
+      await handleAdd(args.slice(1));
+      break;
+    case 'upload':
+      await handleUpload(args.slice(1));
+      break;
+    case 'server':
+      await handleServer(args.slice(1));
+      break;
+    case 'help':
+    case '--help':
+    case '-h':
+      showHelp();
+      break;
+    default:
+      console.error(`Unknown command: ${command}`);
+      showHelp();
+      process.exit(1);
+  }
+}
+
+async function handleAdd(args) {
+  const filePath = args[0];
+  
+  if (!filePath) {
+    console.error('Error: File path is required');
+    console.log('Usage: indexcp add <file-path>');
+    process.exit(1);
+  }
+
+  if (!fs.existsSync(filePath)) {
+    console.error(`Error: File not found: ${filePath}`);
+    process.exit(1);
+  }
+
+  try {
+    const client = new IndexCPClient();
+    await client.addFile(filePath);
+    console.log(`File ${filePath} successfully added to buffer`);
+  } catch (error) {
+    console.error('Error adding file:', error.message);
+    process.exit(1);
+  }
+}
+
+async function handleUpload(args) {
+  const serverUrl = args[0];
+  
+  if (!serverUrl) {
+    console.error('Error: Server URL is required');
+    console.log('Usage: indexcp upload <server-url>');
+    process.exit(1);
+  }
+
+  try {
+    const client = new IndexCPClient();
+    await client.uploadBufferedFiles(serverUrl);
+    console.log('All buffered files uploaded successfully');
+  } catch (error) {
+    console.error('Error uploading files:', error.message);
+    process.exit(1);
+  }
+}
+
+async function handleServer(args) {
+  const port = args[0] ? parseInt(args[0]) : 3000;
+  const outputDir = args[1] || process.cwd();
+  
+  try {
+    const server = new IndexCPServer({ port, outputDir });
+    server.listen(port);
+    
+    // Handle graceful shutdown
+    process.on('SIGINT', () => {
+      console.log('\nShutting down server...');
+      server.close();
+      process.exit(0);
+    });
+  } catch (error) {
+    console.error('Error starting server:', error.message);
+    process.exit(1);
+  }
+}
+
+function showHelp() {
+  console.log(`
+IndexCP - Secure, resumable file transfer with IndexedDB buffering
+
+Usage:
+  indexcp add <file-path>           Add a file to the buffer
+  indexcp upload <server-url>       Upload buffered files to server
+  indexcp server [port] [output-dir]  Start upload server (default port: 3000)
+  indexcp help                     Show this help message
+
+Examples:
+  indexcp add ./myfile.txt
+  indexcp upload http://localhost:3000/upload
+  indexcp server 3000 ./uploads
+`);
+}
+
+// Handle uncaught errors
+process.on('unhandledRejection', (error) => {
+  console.error('Unhandled error:', error.message);
+  process.exit(1);
+});
+
+if (require.main === module) {
+  main().catch((error) => {
+    console.error('CLI error:', error.message);
+    process.exit(1);
+  });
+}
