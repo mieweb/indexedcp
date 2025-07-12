@@ -16,22 +16,22 @@
 
 ### Benefits of Separate Imports
 
-- **Client-only** (`indexcp/client`): Perfect for browser environments - includes only upload functionality without server dependencies
-- **Server-only** (`indexcp/server`): Ideal for server environments - includes only receive functionality without IndexedDB dependencies  
-- **Combined** (`indexcp`): Backward compatible - includes both client and server for existing code
+- **Client-only** (`indexCP/client`): Perfect for browser environments - includes only upload functionality without server dependencies
+- **Server-only** (`indexCP/server`): Ideal for server environments - includes only receive functionality without IndexedDB dependencies  
+- **Combined** (`indexCP`): Backward compatible - includes both client and server for existing code
 
 ---
 
 ## Installation
 
 ```bash
-npm install -g indexcp
+npm install -g indexCP
 ```
 
 Or as a library:
 
 ```bash
-npm install indexcp
+npm install indexCP
 ```
 
 ---
@@ -44,13 +44,13 @@ npm install indexcp
 
 ```javascript
 // Client-only import (for browser/upload-only usage)
-const IndexCPClient = require('indexcp/client');
+const IndexCPClient = require('indexCP/client');
 
 // Server-only import (for server/receive-only usage)  
-const { IndexCPServer, createSimpleServer } = require('indexcp/server');
+const { IndexCPServer, createSimpleServer } = require('indexCP/server');
 
 // Combined import (backward compatible - includes both)
-const { client: IndexCPClient, server } = require('indexcp');
+const { client: IndexCPClient, server } = require('indexCP');
 ```
 
 ### Client-Only Usage
@@ -58,7 +58,7 @@ const { client: IndexCPClient, server } = require('indexcp');
 For browser environments or when you only need upload capabilities:
 
 ```javascript
-const IndexCPClient = require('indexcp/client');
+const IndexCPClient = require('indexCP/client');
 
 async function uploadFile() {
   const client = new IndexCPClient();
@@ -76,7 +76,7 @@ async function uploadFile() {
 For server environments that only need to receive uploads:
 
 ```javascript
-const { IndexCPServer } = require('indexcp/server');
+const { IndexCPServer } = require('indexCP/server');
 
 const server = new IndexCPServer({
   port: 3000,
@@ -221,7 +221,7 @@ If no API key is set via environment variable or command line, the client will p
 Add a file to the buffer:
 
 ```bash
-indexcp add ./myfile.txt
+indexCP add ./myfile.txt
 ```
 
 Start a server (generates random API key if none provided):
@@ -235,7 +235,7 @@ indexcp server 3000 ./uploads
 Upload buffered files to a server:
 
 ```bash
-indexcp upload http://localhost:3000/upload
+indexCP upload http://localhost:3000/upload
 ```
 
 ---

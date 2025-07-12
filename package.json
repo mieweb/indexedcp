@@ -1,5 +1,5 @@
 {
-  "name": "indexcp",
+  "name": "indexCP",
   "version": "1.0.0",
   "description": "Node.js library and CLI toolset for secure, efficient, and resumable file transfer with IndexedDB buffering",
   "main": "index.js",
@@ -9,7 +9,7 @@
     "./server": "./server.js"
   },
   "bin": {
-    "indexcp": "./bin/indexcp"
+    "indexCP": "./bin/indexcp"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
