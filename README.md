@@ -12,6 +12,13 @@
 - Minimal, embeddable client library
 - Simple CLI tools for both client and server
 - Secure, chunked transfer protocol
+- **Separate client/server imports for reduced bundle size**
+
+### Benefits of Separate Imports
+
+- **Client-only** (`indexcp/client`): Perfect for browser environments - includes only upload functionality without server dependencies
+- **Server-only** (`indexcp/server`): Ideal for server environments - includes only receive functionality without IndexedDB dependencies  
+- **Combined** (`indexcp`): Backward compatible - includes both client and server for existing code
 
 ---
 
@@ -30,6 +37,56 @@ npm install indexcp
 ---
 
 ## Usage
+
+### Import Options
+
+**IndexCP** now supports separate imports for client-only and server-only usage, allowing you to include only the code you need:
+
+```javascript
+// Client-only import (for browser/upload-only usage)
+const IndexCPClient = require('indexcp/client');
+
+// Server-only import (for server/receive-only usage)  
+const { IndexCPServer, createSimpleServer } = require('indexcp/server');
+
+// Combined import (backward compatible - includes both)
+const { client: IndexCPClient, server } = require('indexcp');
+```
+
+### Client-Only Usage
+
+For browser environments or when you only need upload capabilities:
+
+```javascript
+const IndexCPClient = require('indexcp/client');
+
+async function uploadFile() {
+  const client = new IndexCPClient();
+  
+  // Add file to buffer
+  await client.addFile('./myfile.txt');
+  
+  // Upload to server
+  await client.uploadBufferedFiles('http://localhost:3000/upload');
+}
+```
+
+### Server-Only Usage
+
+For server environments that only need to receive uploads:
+
+```javascript
+const { IndexCPServer } = require('indexcp/server');
+
+const server = new IndexCPServer({
+  port: 3000,
+  outputDir: './uploads'
+});
+
+server.listen(3000, () => {
+  console.log('Server ready to receive uploads');
+});
+```
 
 ### Client: Streaming a File with IndexedDB Buffer
 

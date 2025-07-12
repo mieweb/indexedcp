@@ -3,6 +3,11 @@
   "version": "1.0.0",
   "description": "Node.js library and CLI toolset for secure, efficient, and resumable file transfer with IndexedDB buffering",
   "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./server": "./server.js"
+  },
   "bin": {
     "indexcp": "./bin/indexcp"
   },
