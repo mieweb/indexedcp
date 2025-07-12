@@ -69,9 +69,15 @@ async function bufferAndUpload(filePath, serverUrl) {
 }
 
 async function uploadChunk(serverUrl, chunk, index) {
+  const apiKey = process.env.INDEXCP_API_KEY || 'your-api-key-here';
+  
   await fetch(serverUrl, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/octet-stream', 'X-Chunk-Index': index },
+    headers: { 
+      'Content-Type': 'application/octet-stream', 
+      'X-Chunk-Index': index,
+      'X-API-Key': apiKey
+    },
     body: chunk
   });
 }
@@ -84,7 +90,7 @@ bufferAndUpload('./myfile.txt', 'http://localhost:3000/upload');
 
 ### Server: Minimal CLI Example
 
-This example shows a simple Node.js server that receives file chunks and appends them to a file.
+This example shows a simple Node.js server that receives file chunks and appends them to a file, with API key authentication.
 
 ```javascript
 // examples/server.js
@@ -93,9 +99,18 @@ const fs = require('fs');
 const path = require('path');
 
 const OUTPUT_FILE = path.join(__dirname, 'uploaded_file.txt');
+const API_KEY = process.env.INDEXCP_API_KEY || 'your-secure-api-key';
 
 const server = http.createServer((req, res) => {
   if (req.method === 'POST' && req.url === '/upload') {
+    // Check API key authentication
+    const providedApiKey = req.headers['x-api-key'];
+    if (!providedApiKey || providedApiKey !== API_KEY) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Invalid or missing API key' }));
+      return;
+    }
+    
     const writeStream = fs.createWriteStream(OUTPUT_FILE, { flags: 'a' });
     req.pipe(writeStream);
     req.on('end', () => {
@@ -110,6 +125,7 @@ const server = http.createServer((req, res) => {
 
 server.listen(3000, () => {
   console.log('Server listening on http://localhost:3000');
+  console.log(`API Key: ${API_KEY}`);
 });
 ```
 
@@ -117,10 +133,43 @@ server.listen(3000, () => {
 
 ## CLI Usage
 
+### API Key Authentication
+
+IndexCP now requires API key authentication for secure file transfers. The server automatically generates a secure API key if none is provided.
+
+**Recommended approach - Environment Variable:**
+```bash
+export INDEXCP_API_KEY=your-secure-api-key
+indexcp server 3000 ./uploads
+indexcp upload http://localhost:3000/upload
+```
+
+**Alternative - Command Line (not recommended for security):**
+```bash
+# Server with custom API key (shows security warning)
+indexcp server 3000 ./uploads --api-key your-key
+
+# Upload with API key (shows security warning)  
+indexcp upload http://localhost:3000/upload --api-key your-key
+```
+
+**Automatic prompting:**
+If no API key is set via environment variable or command line, the client will prompt you to enter it securely.
+
+### Basic Commands
+
 Add a file to the buffer:
 
 ```bash
 indexcp add ./myfile.txt
+```
+
+Start a server (generates random API key if none provided):
+
+```bash
+indexcp server 3000 ./uploads
+# Outputs: Server listening on http://localhost:3000
+# Outputs: API Key: [64-character hex string]
 ```
 
 Upload buffered files to a server:
