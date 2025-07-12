@@ -50,9 +50,15 @@ async function bufferAndUpload(filePath, serverUrl) {
 }
 
 async function uploadChunk(serverUrl, chunk, index) {
+  const apiKey = process.env.INDEXCP_API_KEY || 'your-api-key-here';
+  
   await fetch(serverUrl, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/octet-stream', 'X-Chunk-Index': index },
+    headers: { 
+      'Content-Type': 'application/octet-stream', 
+      'X-Chunk-Index': index,
+      'Authorization': `Bearer ${apiKey}`
+    },
     body: chunk
   });
 }

@@ -76,7 +76,7 @@ async function uploadChunk(serverUrl, chunk, index) {
     headers: { 
       'Content-Type': 'application/octet-stream', 
       'X-Chunk-Index': index,
-      'X-API-Key': apiKey
+      'Authorization': `Bearer ${apiKey}`
     },
     body: chunk
   });
@@ -104,7 +104,10 @@ const API_KEY = process.env.INDEXCP_API_KEY || 'your-secure-api-key';
 const server = http.createServer((req, res) => {
   if (req.method === 'POST' && req.url === '/upload') {
     // Check API key authentication
-    const providedApiKey = req.headers['x-api-key'];
+    const authHeader = req.headers['authorization'];
+    const providedApiKey = authHeader && authHeader.startsWith('Bearer ') 
+      ? authHeader.slice(7) 
+      : null;
     if (!providedApiKey || providedApiKey !== API_KEY) {
       res.writeHead(401, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Invalid or missing API key' }));
