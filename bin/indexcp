@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 
+// Set CLI mode for filesystem storage
+process.env.INDEXCP_CLI_MODE = 'true';
+
 const IndexCPClient = require('../lib/client');
 const { IndexCPServer } = require('../lib/server');
 const path = require('path');
