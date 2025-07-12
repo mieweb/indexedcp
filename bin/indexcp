@@ -64,16 +64,37 @@ async function handleAdd(args) {
 }
 
 async function handleUpload(args) {
-  const serverUrl = args[0];
+  let serverUrl = null;
+  let apiKey = null;
+  
+  // Parse arguments
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === '--api-key' && i + 1 < args.length) {
+      apiKey = args[i + 1];
+      console.warn('WARNING: Providing API key via command line is not recommended for security reasons.');
+      console.warn('Consider setting the INDEXCP_API_KEY environment variable instead.');
+      i++; // Skip the next argument since it's the API key value
+    } else if (arg.startsWith('--api-key=')) {
+      apiKey = arg.split('=', 2)[1];
+      console.warn('WARNING: Providing API key via command line is not recommended for security reasons.');
+      console.warn('Consider setting the INDEXCP_API_KEY environment variable instead.');
+    } else if (!serverUrl) {
+      serverUrl = arg;
+    }
+  }
   
   if (!serverUrl) {
     console.error('Error: Server URL is required');
-    console.log('Usage: indexcp upload <server-url>');
+    console.log('Usage: indexcp upload <server-url> [--api-key <key>]');
     process.exit(1);
   }
 
   try {
     const client = new IndexCPClient();
+    if (apiKey) {
+      client.apiKey = apiKey;
+    }
     await client.uploadBufferedFiles(serverUrl);
     console.log('All buffered files uploaded successfully');
   } catch (error) {
@@ -83,11 +104,37 @@ async function handleUpload(args) {
 }
 
 async function handleServer(args) {
-  const port = args[0] ? parseInt(args[0]) : 3000;
-  const outputDir = args[1] || process.cwd();
+  let port = 3000;
+  let outputDir = process.cwd();
+  let apiKey = null;
+  
+  // Parse arguments
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === '--api-key' && i + 1 < args.length) {
+      apiKey = args[i + 1];
+      console.warn('WARNING: Providing API key via command line is not recommended for security reasons.');
+      console.warn('Consider setting the INDEXCP_API_KEY environment variable instead.');
+      i++; // Skip the next argument since it's the API key value
+    } else if (arg.startsWith('--api-key=')) {
+      apiKey = arg.split('=', 2)[1];
+      console.warn('WARNING: Providing API key via command line is not recommended for security reasons.');
+      console.warn('Consider setting the INDEXCP_API_KEY environment variable instead.');
+    } else if (!isNaN(parseInt(arg))) {
+      port = parseInt(arg);
+    } else {
+      outputDir = arg;
+    }
+  }
+  
+  // Check environment variable for API key
+  if (!apiKey && process.env.INDEXCP_API_KEY) {
+    apiKey = process.env.INDEXCP_API_KEY;
+    console.log('Using API key from INDEXCP_API_KEY environment variable');
+  }
   
   try {
-    const server = new IndexCPServer({ port, outputDir });
+    const server = new IndexCPServer({ port, outputDir, apiKey });
     server.listen(port);
     
     // Handle graceful shutdown
@@ -107,15 +154,27 @@ function showHelp() {
 IndexCP - Secure, resumable file transfer with IndexedDB buffering
 
 Usage:
-  indexcp add <file-path>           Add a file to the buffer
-  indexcp upload <server-url>       Upload buffered files to server
-  indexcp server [port] [output-dir]  Start upload server (default port: 3000)
-  indexcp help                     Show this help message
+  indexcp add <file-path>                      Add a file to the buffer
+  indexcp upload <server-url> [--api-key <key>]  Upload buffered files to server
+  indexcp server [port] [output-dir] [--api-key <key>]  Start upload server (default port: 3000)
+  indexcp help                                Show this help message
+
+API Key Options:
+  --api-key <key>     Specify API key (NOT recommended for security)
+  Environment var:    Set INDEXCP_API_KEY environment variable (recommended)
+  Auto-prompt:        If no API key provided, you will be prompted
 
 Examples:
   indexcp add ./myfile.txt
   indexcp upload http://localhost:3000/upload
   indexcp server 3000 ./uploads
+  
+  # Using environment variable (recommended):
+  export INDEXCP_API_KEY=your-api-key-here
+  indexcp upload http://localhost:3000/upload
+  
+  # Using command line (not recommended):
+  indexcp upload http://localhost:3000/upload --api-key your-key-here
 `);
 }
 
