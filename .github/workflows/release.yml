@@ -1,0 +1,47 @@
+name: Release and Publish
+
+on:
+  release:
+    types: [published]
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        registry-url: 'https://registry.npmjs.org'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Validate package integrity
+      run: npm audit --audit-level=high
+      
+    - name: Test CLI functionality
+      run: |
+        ./bin/indexcp help
+        node -e "require('./index.js'); console.log('Package loads successfully');"
+        
+    - name: Run tests (if available)
+      run: |
+        if npm test 2>&1 | grep -q "Error: no test specified"; then
+          echo "No tests specified - skipping test step"
+        else
+          npm test
+        fi
+      
+    - name: Publish to npm
+      run: npm publish
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
