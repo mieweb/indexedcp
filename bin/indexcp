@@ -95,8 +95,23 @@ async function handleUpload(args) {
     if (apiKey) {
       client.apiKey = apiKey;
     }
-    await client.uploadBufferedFiles(serverUrl);
+    const uploadResults = await client.uploadBufferedFiles(serverUrl);
+    
     console.log('All buffered files uploaded successfully');
+    
+    // Display server filename mappings if any differ from client names
+    if (uploadResults) {
+      const differentFilenames = Object.entries(uploadResults).filter(
+        ([clientName, serverName]) => serverName !== require('path').basename(clientName)
+      );
+      
+      if (differentFilenames.length > 0) {
+        console.log('\nServer-determined filenames:');
+        differentFilenames.forEach(([clientName, serverName]) => {
+          console.log(`  ${require('path').basename(clientName)} -> ${serverName}`);
+        });
+      }
+    }
   } catch (error) {
     console.error('Error uploading files:', error.message);
     process.exit(1);
