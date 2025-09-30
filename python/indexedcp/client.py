@@ -254,8 +254,9 @@ class IndexCPClient:
             return response_data
             
         except requests.RequestException as e:
-            print(f"Upload failed: {e}")
-            raise
+            error_msg = f"Failed to upload chunk {index} for file '{file_name}': {str(e)}"
+            print(error_msg)
+            raise requests.RequestException(error_msg) from e
     
     def buffer_and_upload(self, file_path: str, server_url: str):
         """
