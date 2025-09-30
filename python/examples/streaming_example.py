@@ -36,7 +36,7 @@ class StreamingUploader:
         print(f"Starting streaming upload of {file_path}")
         
         # Get API key
-        api_key = self.client.get_api_key_sync()
+        api_key = self.client.get_api_key()
         
         chunk_index = 0
         uploaded_chunks = []

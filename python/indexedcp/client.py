@@ -66,23 +66,8 @@ class IndexCPClient:
         """Prompt user for API key securely."""
         return getpass.getpass("Enter API key: ").strip()
     
-    async def get_api_key(self) -> str:
+    def get_api_key(self) -> str:
         """Get API key from environment variable or user input."""
-        if self.api_key:
-            return self.api_key
-        
-        # Check environment variable first
-        env_key = os.environ.get("INDEXCP_API_KEY")
-        if env_key:
-            self.api_key = env_key
-            return self.api_key
-        
-        # Prompt user for API key
-        self.api_key = self._prompt_for_api_key()
-        return self.api_key
-    
-    def get_api_key_sync(self) -> str:
-        """Synchronous version of get_api_key for CLI usage."""
         if self.api_key:
             return self.api_key
         
@@ -149,7 +134,7 @@ class IndexCPClient:
         Raises:
             requests.RequestException: If there's an error during upload
         """
-        api_key = self.get_api_key_sync()
+        api_key = self.get_api_key()
         
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute("SELECT * FROM chunks ORDER BY file_name, chunk_index")
@@ -229,7 +214,7 @@ class IndexCPClient:
             ValueError: If authentication fails
         """
         if not api_key:
-            api_key = self.get_api_key_sync()
+            api_key = self.get_api_key()
         
         headers = {
             "Content-Type": "application/octet-stream",
@@ -280,7 +265,7 @@ class IndexCPClient:
             file_path: Path to the file to upload
             server_url: URL of the upload endpoint
         """
-        api_key = self.get_api_key_sync()
+        api_key = self.get_api_key()
         
         # Create temporary chunks and upload immediately
         file_path = Path(file_path)

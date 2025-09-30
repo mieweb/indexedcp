@@ -118,7 +118,7 @@ Get list of files currently in the buffer.
 
 Clear all chunks from the buffer.
 
-##### `get_api_key_sync() -> str`
+##### `get_api_key() -> str`
 
 Get API key from environment variable or user input.
 
