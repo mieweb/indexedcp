@@ -12,7 +12,7 @@ long_description = (this_directory / "../README.md").read_text() if (this_direct
 setup(
     name="indexedcp",
     version="1.0.0",
-    description="Python client for IndexedCP secure, efficient, and resumable file transfer",
+    description="Python client and server for IndexedCP secure, efficient, and resumable file transfer",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="IndexedCP Contributors",
@@ -21,7 +21,7 @@ setup(
     install_requires=[
         "requests>=2.25.0",
     ],
-    scripts=["bin/indexcp"],
+    scripts=["bin/indexcp", "bin/indexcp-server"],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
