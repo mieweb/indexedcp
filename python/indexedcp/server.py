@@ -108,9 +108,9 @@ class IndexCPRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b'Not Found')
     
-    def log_message(self, format, *args):
-        """Override to suppress default logging."""
-        pass
+    # def log_message(self, format, *args):
+    #     """Override to suppress default logging."""
+    #     pass
 
 
 class IndexCPServer:
@@ -203,6 +203,20 @@ class IndexCPServer:
         except KeyboardInterrupt:
             print("\nShutting down server...")
             self.close()
+        except OSError as e:
+            print(f"\nServer error: {e}")
+            if "Address already in use" in str(e):
+                print(f"Port {self.port} is already in use. Try a different port.")
+            elif "Permission denied" in str(e):
+                print(f"Permission denied on port {self.port}. Try running as administrator or use a port > 1024.")
+            else:
+                print("Check if the port is available and you have proper permissions.")
+            self.close()
+        except Exception as e:
+            print(f"\nUnexpected server error: {e}")
+            print("Server will attempt to shutdown gracefully...")
+            self.close()
+            raise  # Re-raise for debugging if needed
     
     def close(self):
         """Stop the server."""
@@ -273,6 +287,17 @@ if __name__ == "__main__":
         except KeyboardInterrupt:
             print("\nShutting down server...")
             server.shutdown()
+        except OSError as e:
+            print(f"\nSimple server error: {e}")
+            if "Address already in use" in str(e):
+                print(f"Port {args.port} is already in use. Try a different port.")
+            elif "Permission denied" in str(e):
+                print(f"Permission denied on port {args.port}. Try running as administrator or use a port > 1024.")
+            server.shutdown()
+        except Exception as e:
+            print(f"\nUnexpected error in simple server: {e}")
+            server.shutdown()
+            raise
     else:
         server = IndexCPServer(
             output_dir=args.output_dir,
