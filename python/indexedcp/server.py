@@ -161,16 +161,34 @@ class IndexCPServer:
             self.create_server()
         
         def server_runner():
-            print(f"Server listening on http://localhost:{self.port}")
-            print(f"API Key: {self.api_key}")
-            print("Include this API key in requests using the Authorization: Bearer <token> header")
-            print(f"Upload endpoint: http://localhost:{self.port}/upload")
-            print(f"Output directory: {self.output_dir}")
-            
-            if callback:
-                callback()
-            
-            self.httpd.serve_forever()
+            try:
+                print(f"Server listening on http://localhost:{self.port}")
+                print(f"API Key: {self.api_key}")
+                print("Include this API key in requests using the Authorization: Bearer <token> header")
+                print(f"Upload endpoint: http://localhost:{self.port}/upload")
+                print(f"Output directory: {self.output_dir}")
+                
+                if callback:
+                    callback()
+                
+                self.httpd.serve_forever()
+            except OSError as e:
+                print(f"\nServer error in background thread: {e}")
+                if "Address already in use" in str(e):
+                    print(f"Port {self.port} is already in use. Try a different port.")
+                elif "Permission denied" in str(e):
+                    print(f"Permission denied on port {self.port}. Try running as administrator or use a port > 1024.")
+            except Exception as e:
+                print(f"\nUnexpected error in background server thread: {e}")
+                print("Background server thread will terminate.")
+            finally:
+                # Ensure cleanup happens even if there's an error
+                if hasattr(self, 'httpd') and self.httpd:
+                    try:
+                        self.httpd.shutdown()
+                        self.httpd.server_close()
+                    except:
+                        pass
         
         self.server_thread = threading.Thread(target=server_runner, daemon=True)
         self.server_thread.start()
