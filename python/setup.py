@@ -15,7 +15,7 @@ setup(
     description="Python client and server for IndexedCP secure, efficient, and resumable file transfer",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    author="IndexedCP Contributors",
+    author="adithyasn7@gmail.com",
     python_requires=">=3.7",
     packages=find_packages(),
     install_requires=[

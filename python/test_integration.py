@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
 """
-Integration test for IndexedCP Python client with Node.js server.
+Integration test for IndexedCP Python client with Python server.
+
+This test verifies that the Python client and Python server work together correctly,
+providing a complete end-to-end test of the Python IndexedCP implementation.
 """
 
 import sys
 import os
 import time
-import subprocess
-import signal
+import threading
 import requests
 from pathlib import Path
 
 # Add the current directory to Python path so we can import indexedcp
 sys.path.insert(0, str(Path(__file__).parent))
 
-from indexedcp import IndexCPClient
+from indexedcp import IndexCPClient, IndexCPServer
 
 
 def wait_for_server(url, timeout=10):
@@ -30,7 +32,7 @@ def wait_for_server(url, timeout=10):
 
 
 def test_integration():
-    """Test Python client with Node.js server."""
+    """Test Python client with Python server."""
     
     # Create test file
     test_file = Path(__file__).parent / "integration_test.txt"
@@ -41,36 +43,37 @@ def test_integration():
     
     print(f"Created test file: {test_file} ({len(test_content)} bytes)")
     
-    # Start Node.js server
-    server_process = None
-    uploads_dir = Path(__file__).parent.parent / "uploads"
+    # Setup server
+    uploads_dir = Path(__file__).parent / "test_uploads"
     uploads_dir.mkdir(exist_ok=True)
     
+    # Create Python server
+    api_key = "test-api-key-for-integration"
+    server = IndexCPServer(
+        output_dir=str(uploads_dir),
+        port=3001,  # Use different port to avoid conflicts
+        api_key=api_key
+    )
+    
     try:
-        print("Starting IndexedCP server...")
+        print("Starting Python IndexedCP server...")
         
-        # Set environment variable for API key
-        env = os.environ.copy()
-        env["INDEXCP_API_KEY"] = "test-api-key-for-integration"
+        # Start server in background thread
+        def server_ready():
+            print("Server started successfully!")
         
-        server_process = subprocess.Popen([
-            "node", 
-            str(Path(__file__).parent.parent / "bin" / "indexcp"),
-            "server", "3000", str(uploads_dir)
-        ], env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        server.start(callback=server_ready)
         
         # Wait for server to start
-        if not wait_for_server("http://localhost:3000", timeout=10):
+        if not wait_for_server("http://localhost:3001", timeout=10):
             print("Server failed to start in time")
             return False
-        
-        print("Server started successfully!")
         
         # Test Python client
         print("\n=== Testing Python Client ===")
         
         # Set API key for client
-        os.environ["INDEXCP_API_KEY"] = "test-api-key-for-integration"
+        os.environ["INDEXCP_API_KEY"] = api_key
         
         client = IndexCPClient()
         
@@ -87,7 +90,7 @@ def test_integration():
         # Test 3: Upload buffered files
         print("3. Uploading buffered files...")
         try:
-            results = client.upload_buffered_files("http://localhost:3000/upload")
+            results = client.upload_buffered_files("http://localhost:3001/upload")
             print(f"   Upload results: {results}")
             
             # Check if file was uploaded
@@ -121,7 +124,7 @@ def test_integration():
             f.write("Direct upload test content!\n" * 50)
         
         try:
-            client.buffer_and_upload(str(test_file2), "http://localhost:3000/upload")
+            client.buffer_and_upload(str(test_file2), "http://localhost:3001/upload")
             print("   ✓ Direct upload completed!")
         except Exception as e:
             print(f"   Direct upload failed: {e}")
@@ -134,25 +137,24 @@ def test_integration():
         
     except Exception as e:
         print(f"Integration test failed: {e}")
+        import traceback
+        traceback.print_exc()
         return False
         
     finally:
         # Clean up
         test_file.unlink(missing_ok=True)
         
-        if server_process:
+        # Shutdown server
+        if server:
             print("\nShutting down server...")
-            server_process.terminate()
-            try:
-                server_process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                server_process.kill()
-                server_process.wait()
+            server.close()
         
         # Clean up upload directory
         if uploads_dir.exists():
             for f in uploads_dir.glob("*"):
                 f.unlink(missing_ok=True)
+            uploads_dir.rmdir()
 
 
 if __name__ == "__main__":
