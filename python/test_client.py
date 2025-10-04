@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 """
-Simple unit tests for the IndexedCP Python client.
+IndexedCP Python Client Tests
+
+Test suite for the IndexedCP Python client implementation using IndexedDB-like storage.
 """
 
-import sys
 import os
+import sys
 import tempfile
-import sqlite3
+import unittest
 from pathlib import Path
 
-# Add the current directory to Python path so we can import indexedcp
+# Add the parent directory to path for importing indexedcp
 sys.path.insert(0, str(Path(__file__).parent))
 
 from indexedcp import IndexCPClient
@@ -33,28 +35,45 @@ def test_client_initialization():
 
 
 def test_database_operations():
-    """Test database operations."""
-    print("Testing database operations...")
+    """Test IndexedDB-like database operations."""
+    print("Testing IndexedDB-like database operations...")
     
     # Create temporary client
     with tempfile.TemporaryDirectory() as temp_dir:
-        # Override the db path to use temp directory
+        # Create client with custom database name
         client = IndexCPClient(db_name="test")
-        client.db_path = Path(temp_dir) / "test.db"
-        client._init_db()
         
-        # Verify database was created with correct schema
-        with sqlite3.connect(client.db_path) as conn:
-            cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='chunks'")
-            assert cursor.fetchone() is not None
-            
-            # Test table structure
-            cursor = conn.execute("PRAGMA table_info(chunks)")
-            columns = [row[1] for row in cursor.fetchall()]
-            expected_columns = ['id', 'file_name', 'chunk_index', 'data']
-            assert all(col in columns for col in expected_columns)
+        # Verify database was created and can store data
+        test_record = {
+            'id': 'test-chunk-1',
+            'fileName': 'test.txt',
+            'chunkIndex': 0,
+            'data': b'test data'
+        }
+        
+        # Add test record
+        client.db.add('chunks', test_record)
+        
+        # Retrieve and verify
+        retrieved = client.db.get('chunks', 'test-chunk-1')
+        assert retrieved is not None
+        assert retrieved['fileName'] == 'test.txt'
+        assert retrieved['chunkIndex'] == 0
+        assert retrieved['data'] == b'test data'
+        
+        # Test get_all
+        all_records = client.db.get_all('chunks')
+        assert len(all_records) == 1
+        
+        # Test delete
+        deleted = client.db.delete('chunks', 'test-chunk-1')
+        assert deleted is True
+        
+        # Verify deletion
+        retrieved_after_delete = client.db.get('chunks', 'test-chunk-1')
+        assert retrieved_after_delete is None
     
-    print("✓ Database operations test passed")
+    print("✓ IndexedDB-like database operations test passed")
 
 
 def test_file_operations():
@@ -133,26 +152,26 @@ def test_chunk_operations():
         
         # Create client with small chunk size
         client = IndexCPClient(db_name="test", chunk_size=50)  # 50 byte chunks
-        client.db_path = Path(temp_dir) / "test.db"
-        client._init_db()
         
         # Add file and verify chunks
         chunk_count = client.add_file(str(test_file))
         assert chunk_count == 3  # 150 bytes / 50 bytes per chunk = 3 chunks
         
-        # Verify chunk data in database
-        with sqlite3.connect(client.db_path) as conn:
-            cursor = conn.execute("SELECT chunk_index, data FROM chunks ORDER BY chunk_index")
-            chunks = cursor.fetchall()
-            
-            assert len(chunks) == 3
-            assert len(chunks[0][1]) == 50  # First chunk: 50 bytes
-            assert len(chunks[1][1]) == 50  # Second chunk: 50 bytes  
-            assert len(chunks[2][1]) == 50  # Third chunk: 50 bytes
-            
-            # Verify content
-            reconstructed = b"".join(chunk[1] for chunk in chunks)
-            assert reconstructed == test_content
+        # Verify chunk data using IndexedDB-like interface
+        all_chunks = client.db.get_all('chunks')
+        
+        assert len(all_chunks) == 3
+        
+        # Sort chunks by index for verification
+        all_chunks.sort(key=lambda x: x['chunkIndex'])
+        
+        assert len(all_chunks[0]['data']) == 50  # First chunk: 50 bytes
+        assert len(all_chunks[1]['data']) == 50  # Second chunk: 50 bytes  
+        assert len(all_chunks[2]['data']) == 50  # Third chunk: 50 bytes
+        
+        # Verify content
+        reconstructed = b"".join(chunk['data'] for chunk in all_chunks)
+        assert reconstructed == test_content
     
     print("✓ Chunk operations test passed")
 

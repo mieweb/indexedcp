@@ -6,7 +6,7 @@ A complete Python implementation of IndexedCP for secure, efficient, and resumab
 
 - **Complete Implementation**: Both client and server in Python
 - **Chunked file transfer** with configurable chunk sizes
-- **SQLite-based buffering** for reliable, resumable uploads
+- **IndexedDB-like buffering** for reliable, resumable uploads (compatible with JavaScript version)
 - **API key authentication** for secure transfers
 - **CLI and library interfaces** for flexibility
 - **Cross-platform compatibility** (Windows, macOS, Linux)
@@ -26,7 +26,7 @@ pip install -r requirements.txt
 
 - Python 3.7+
 - `requests` library for HTTP operations
-- SQLite3 (included with Python)
+- **No SQLite dependency** - Uses built-in IndexedDB-like interface
 
 ## Quick Start
 
@@ -116,7 +116,7 @@ python3 bin/indexcp-server --simple
 IndexCPClient(db_name="indexcp", chunk_size=1024*1024)
 ```
 
-- `db_name`: Name of the SQLite database for storing chunks
+- `db_name`: Name of the IndexedDB-like database for storing chunks
 - `chunk_size`: Size of each chunk in bytes (default: 1MB)
 
 #### Methods
@@ -266,7 +266,7 @@ client = IndexCPClient(chunk_size=5*1024*1024)  # 5MB chunks
 
 ### Database Location
 
-The client stores chunks in a SQLite database located at:
+The client stores chunks in an IndexedDB-like database located at:
 
 - Linux/macOS: `~/.indexcp/indexcp.db`
 - Windows: `%USERPROFILE%\.indexcp\indexcp.db`
@@ -456,7 +456,7 @@ Both implementations use the same HTTP-based protocol:
 - ✓ Chunked file transfers
 - ✓ API key authentication
 - ✓ Custom filename generators
-- ✓ SQLite buffering (client-side)
+- ✓ IndexedDB-like buffering (client-side)
 - ✓ Resumable uploads
 - ✓ CLI interfaces
 - ✓ Error handling
