@@ -99,16 +99,16 @@ def test_api_key_handling():
     original_key = os.environ.get("INDEXCP_API_KEY")
     try:
         os.environ["INDEXCP_API_KEY"] = "test-key-from-env"
-        key = client.get_api_key()
+        key = client.get_api_key_sync()
         assert key == "test-key-from-env"
         
         # Test cached key
-        key2 = client.get_api_key()
+        key2 = client.get_api_key_sync()
         assert key2 == "test-key-from-env"
         
         # Test direct setting
         client.api_key = "direct-key"
-        key3 = client.get_api_key()
+        key3 = client.get_api_key_sync()
         assert key3 == "direct-key"
         
     finally:
