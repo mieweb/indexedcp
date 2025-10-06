@@ -2,20 +2,18 @@
 IndexedCP Python Client Implementation
 
 This module provides a Python client for the IndexedCP file transfer system,
-compatible with the Node.js server implementation. Now uses IndexedDB-like storage
-for better compatibility with the JavaScript version.
+compatible with the Node.js server implementation.
 """
 
 import os
 import json
 import requests
+import sqlite3
+import hashlib
 import getpass
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 from dataclasses import dataclass
-
-# Import our IndexedDB-like interface
-from .indexeddb import openDB
 
 
 @dataclass
@@ -40,18 +38,29 @@ class IndexCPClient:
         """
         self.db_name = db_name
         self.chunk_size = chunk_size
-        self.store_name = "chunks"
         self.api_key: Optional[str] = None
-        self.db = None
+        self.db_path = self._get_db_path()
         self._init_db()
     
+    def _get_db_path(self) -> Path:
+        """Get the path for the SQLite database."""
+        home_dir = Path.home()
+        db_dir = home_dir / ".indexcp"
+        db_dir.mkdir(exist_ok=True)
+        return db_dir / f"{self.db_name}.db"
+    
     def _init_db(self):
-        """Initialize the IndexedDB-like database for chunk storage."""
-        def upgrade_db(db):
-            if 'chunks' not in db.object_store_names:
-                db.create_object_store('chunks', {'keyPath': 'id', 'autoIncrement': True})
-        
-        self.db = openDB(self.db_name, 1, upgrade_db)
+        """Initialize the SQLite database for chunk storage."""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS chunks (
+                    id TEXT PRIMARY KEY,
+                    file_name TEXT NOT NULL,
+                    chunk_index INTEGER NOT NULL,
+                    data BLOB NOT NULL
+                )
+            """)
+            conn.commit()
     
     def _prompt_for_api_key(self) -> str:
         """Prompt user for API key securely."""
@@ -92,24 +101,22 @@ class IndexCPClient:
         
         chunk_count = 0
         
-        with open(file_path, "rb") as f:
-            while True:
-                chunk_data = f.read(self.chunk_size)
-                if not chunk_data:
-                    break
-                
-                chunk_id = f"{file_path}-{chunk_count}"
-                
-                # Store chunk using IndexedDB-like interface
-                chunk_record = {
-                    'id': chunk_id,
-                    'fileName': str(file_path),
-                    'chunkIndex': chunk_count,
-                    'data': chunk_data
-                }
-                
-                self.db.add(self.store_name, chunk_record)
-                chunk_count += 1
+        with sqlite3.connect(self.db_path) as conn:
+            with open(file_path, "rb") as f:
+                while True:
+                    chunk_data = f.read(self.chunk_size)
+                    if not chunk_data:
+                        break
+                    
+                    chunk_id = f"{file_path}-{chunk_count}"
+                    
+                    conn.execute(
+                        "INSERT OR REPLACE INTO chunks (id, file_name, chunk_index, data) VALUES (?, ?, ?, ?)",
+                        (chunk_id, str(file_path), chunk_count, chunk_data)
+                    )
+                    chunk_count += 1
+            
+            conn.commit()
         
         print(f"File {file_path} added to buffer with {chunk_count} chunks")
         return chunk_count
@@ -129,8 +136,9 @@ class IndexCPClient:
         """
         api_key = self.get_api_key()
         
-        # Get all records using IndexedDB-like interface
-        all_records = self.db.get_all(self.store_name)
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute("SELECT * FROM chunks ORDER BY file_name, chunk_index")
+            all_records = cursor.fetchall()
         
         print(f"Found {len(all_records)} buffered chunks")
         
@@ -139,9 +147,9 @@ class IndexCPClient:
             return {}
         
         # Group records by file name
-        file_groups: Dict[str, List[dict]] = {}
+        file_groups: Dict[str, List[tuple]] = {}
         for record in all_records:
-            file_name = record['fileName']
+            file_name = record[1]  # file_name column
             if file_name not in file_groups:
                 file_groups[file_name] = []
             file_groups[file_name].append(record)
@@ -154,16 +162,13 @@ class IndexCPClient:
         for file_name, chunks in file_groups.items():
             print(f"Uploading {file_name} with {len(chunks)} chunks...")
             
-            # Sort chunks by index
-            chunks.sort(key=lambda x: x['chunkIndex'])
+            # Sort chunks by index (already sorted by SQL query, but being explicit)
+            chunks.sort(key=lambda x: x[2])  # chunk_index column
             
             server_filename = None
             
             for chunk_record in chunks:
-                chunk_id = chunk_record['id']
-                chunk_index = chunk_record['chunkIndex'] 
-                chunk_data = chunk_record['data']
-                
+                chunk_id, _, chunk_index, chunk_data = chunk_record
                 print(f"Uploading chunk {chunk_index} for {file_name}")
                 
                 response_data = self.upload_chunk(
@@ -175,7 +180,9 @@ class IndexCPClient:
                     server_filename = response_data["actualFilename"]
                 
                 # Remove uploaded chunk from buffer
-                self.db.delete(self.store_name, chunk_id)
+                with sqlite3.connect(self.db_path) as conn:
+                    conn.execute("DELETE FROM chunks WHERE id = ?", (chunk_id,))
+                    conn.commit()
             
             # Store the mapping of client filename to server filename
             upload_results[file_name] = server_filename or Path(file_name).name
@@ -286,16 +293,13 @@ class IndexCPClient:
         Returns:
             List of file names in the buffer
         """
-        all_records = self.db.get_all(self.store_name)
-        file_names = set()
-        for record in all_records:
-            file_names.add(record['fileName'])
-        return list(file_names)
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute("SELECT DISTINCT file_name FROM chunks")
+            return [row[0] for row in cursor.fetchall()]
     
     def clear_buffer(self):
         """Clear all chunks from the buffer."""
-        # Get object store and clear it
-        transaction = self.db.transaction([self.store_name], 'readwrite')
-        store = transaction.object_store(self.store_name)
-        store.clear()
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("DELETE FROM chunks")
+            conn.commit()
         print("Buffer cleared")

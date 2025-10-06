@@ -1,20 +1,11 @@
 """
-IndexedCP Python Package
+IndexedCP Python Client and Server
 
-A Python implementation of the IndexedCP file transfer system,
-now with IndexedDB-like storage for better JavaScript compatibility.
+A Python implementation of the IndexedCP client and server for secure, efficient, and resumable file transfer.
 """
 
-from .server import IndexCPServer, create_simple_server
 from .client import IndexCPClient
-from .indexeddb import openDB, open_db, open_db_sync
+from .server import IndexCPServer, create_simple_server
 
 __version__ = "1.0.0"
-__all__ = [
-    "IndexCPServer", 
-    "create_simple_server", 
-    "IndexCPClient",
-    "openDB",
-    "open_db", 
-    "open_db_sync"
-]
+__all__ = ["IndexCPClient", "IndexCPServer", "create_simple_server"]
