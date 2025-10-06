@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+"""
+IndexedCP Python Server CLI
+
+Command-line interface for the IndexedCP Python server.
+"""
+
+import os
+import sys
+import argparse
+import signal
+from pathlib import Path
+
+# Add the parent directory to the path so we can import indexedcp
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from indexedcp import IndexCPServer, create_simple_server
+
+
+def signal_handler(signum, frame):
+    """Handle interrupt signals."""
+    print("\nShutting down server...")
+    sys.exit(0)
+
+
+def main():
+    """Main CLI function."""
+    parser = argparse.ArgumentParser(
+        description='IndexedCP Python Server',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  %(prog)s                           # Start server on port 3000 with auto-generated API key
+  %(prog)s --port 8080               # Start server on port 8080
+  %(prog)s --output-dir ./uploads    # Save uploads to ./uploads directory
+  %(prog)s --api-key mykey123        # Use custom API key
+  %(prog)s --simple                  # Start simple server without authentication
+        """
+    )
+    
+    parser.add_argument(
+        '--port', 
+        type=int, 
+        default=3000, 
+        help='Port to listen on (default: 3000)'
+    )
+    parser.add_argument(
+        '--output-dir', 
+        default=None, 
+        help='Output directory for uploads (default: current directory)'
+    )
+    parser.add_argument(
+        '--api-key', 
+        default=None, 
+        help='API key for authentication (default: auto-generated)'
+    )
+    parser.add_argument(
+        '--simple', 
+        action='store_true', 
+        help='Run simple server without authentication'
+    )
+    parser.add_argument(
+        '--version',
+        action='version',
+        version='IndexedCP Server 1.0.0'
+    )
+    
+    args = parser.parse_args()
+    
+    # Set up signal handlers
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    
+    try:
+        if args.simple:
+            print("Starting IndexedCP Simple Server...")
+            output_file = None
+            if args.output_dir:
+                os.makedirs(args.output_dir, exist_ok=True)
+                output_file = os.path.join(args.output_dir, 'uploaded_file.txt')
+            
+            server = create_simple_server(output_file=output_file, port=args.port)
+            server.serve_forever()
+        else:
+            print("Starting IndexedCP Server...")
+            server = IndexCPServer(
+                output_dir=args.output_dir,
+                port=args.port,
+                api_key=args.api_key
+            )
+            server.listen()
+            
+    except KeyboardInterrupt:
+        print("\nShutting down server...")
+        if 'server' in locals():
+            server.close()
+        sys.exit(0)
+    except Exception as e:
+        print(f"Error starting server: {e}")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
