@@ -2,17 +2,7 @@
 IndexedDB-like interface for Python
 
 This module provides an IndexedDB-compatible API using SQLite as the backend,
-making the Python implementation functionally identical to the JavaScript version.
-
-Key Features:
-- Same API as JavaScript IndexedDB (openDB, add, get, delete, etc.)
-- Automatic binary data serialization/deserialization
-- Transaction support
-- Object store management
-- Full compatibility with the JavaScript IndexedCP client patterns
-
-This replaces the previous SQLite-only approach and provides true cross-language
-compatibility between Python and JavaScript IndexedCP implementations.
+making the Python implementation even closer to the JavaScript version.
 """
 
 import os
