@@ -33,6 +33,15 @@ class IndexCPRequestHandler(BaseHTTPRequestHandler):
         """Handle GET requests."""
         self._send_404()
     
+    def do_OPTIONS(self):
+        """Handle OPTIONS requests for CORS preflight."""
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-File-Name, X-Chunk-Index')
+        self.send_header('Access-Control-Max-Age', '3600')
+        self.end_headers()
+    
     def _handle_upload(self):
         """Handle file upload requests."""
         # Check API key authentication
@@ -93,6 +102,9 @@ class IndexCPRequestHandler(BaseHTTPRequestHandler):
         self.send_response(status_code)
         self.send_header('Content-Type', 'application/json')
         self.send_header('Content-Length', str(len(response_json)))
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-File-Name, X-Chunk-Index')
         self.end_headers()
         self.wfile.write(response_json)
     
@@ -270,11 +282,23 @@ def create_simple_server(output_file: Optional[str] = None, port: int = 3000) ->
                 
                 self.send_response(200)
                 self.send_header('Content-Type', 'text/plain')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+                self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-File-Name, X-Chunk-Index')
                 self.end_headers()
                 self.wfile.write(b'Chunk received\n')
             else:
                 self.send_response(404)
                 self.end_headers()
+        
+        def do_OPTIONS(self):
+            """Handle OPTIONS requests for CORS preflight."""
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+            self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-File-Name, X-Chunk-Index')
+            self.send_header('Access-Control-Max-Age', '3600')
+            self.end_headers()
         
         def log_message(self, format, *args):
             pass
