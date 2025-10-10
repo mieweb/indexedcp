@@ -25,13 +25,13 @@
 ## Installation
 
 ```bash
-npm install -g IndexedCP
+npm install -g indexedcp
 ```
 
 Or as a library:
 
 ```bash
-npm install IndexedCP
+npm install indexedcp
 ```
 
 ---
