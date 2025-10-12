@@ -12,8 +12,10 @@
     "indexedcp": "./bin/indexcp"
   },
   "scripts": {
-    "test": "node test-all-examples.js",
-    "test:verbose": "node test-all-examples.js"
+    "test": "node tests/test-all.js",
+    "test:functional": "node tests/test-all-examples.js",
+    "test:security": "node tests/security-test.js",
+    "test:path-modes": "node tests/test-path-modes.js"
   },
   "keywords": [
     "file-transfer",

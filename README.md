@@ -1,24 +1,18 @@
 
 # indexedcp
 
-**indexedcp** is a Node.js library and CLI toolset for secure, efficient, and resumable file transfer. It uses IndexedDB on the client side as a buffer for streaming data, enabling robust uploads with offline and resumable support. The server receives file chunks and appends them directly to disk—no IndexedDB required on the server.
+**indexedcp** is a Node.js library and CLI toolset for secure, efficient, and resumable file transfer. It uses IndexedDB on the client side as a buffer for streaming data, enabling robust uploads with offline and resumable support.
 
 ---
 
 ## Features
 
-- Stream files as chunks, buffered in IndexedDB
-- Resumable and offline-friendly uploads
-- Minimal, embeddable client library
-- Simple CLI tools for both client and server
-- Secure, chunked transfer protocol
-- **Separate client/server imports for reduced bundle size**
-
-### Benefits of Separate Imports
-
-- **Client-only** (`indexedcp/client`): Perfect for browser environments - includes only upload functionality without server dependencies
-- **Server-only** (`indexedcp/server`): Ideal for server environments - includes only receive functionality without IndexedDB dependencies  
-- **Combined** (`indexedcp`): Backward compatible - includes both client and server for existing code
+- 🔄 Resumable and offline-friendly uploads
+- 📦 Chunked streaming with IndexedDB buffering
+- 🔒 API key authentication
+- 🛡️ Path traversal protection
+- 📦 Separate client/server imports for minimal bundle size
+- 🔧 Simple CLI tools
 
 ---
 
@@ -28,236 +22,170 @@
 npm install -g indexedcp
 ```
 
-Or as a library:
+---
+
+## Quick Start
+
+### CLI Usage
 
 ```bash
-npm install indexedcp
+# Set your API key
+export INDEXCP_API_KEY=your-secure-api-key
+
+# Start server
+indexedcp server 3000 ./uploads
+
+# Upload files (single-step)
+indexedcp upload http://localhost:3000/upload ./file1.txt ./file2.txt
+```
+
+### Programmatic Usage
+
+```javascript
+// Client (upload)
+const IndexCPClient = require('indexedcp/client');
+const client = new IndexCPClient({ apiKey: 'your-key' });
+await client.addFile('./myfile.txt');
+await client.uploadBufferedFiles('http://localhost:3000/upload');
+
+// Server (receive)
+const { IndexCPServer } = require('indexedcp/server');
+new IndexCPServer({ port: 3000, outputDir: './uploads' }).listen(3000);
 ```
 
 ---
 
-## Usage
+## Import Options
 
-### Import Options
-
-**indexedcp** now supports separate imports for client-only and server-only usage, allowing you to include only the code you need:
+Choose the import style that fits your needs:
 
 ```javascript
-// Client-only import (for browser/upload-only usage)
+// Client-only (browser/upload)
 const IndexCPClient = require('indexedcp/client');
 
-// Server-only import (for server/receive-only usage)  
-const { IndexCPServer, createSimpleServer } = require('indexedcp/server');
+// Server-only (receive)
+const { IndexCPServer } = require('indexedcp/server');
 
-// Combined import (backward compatible - includes both)
+// Combined (both - backward compatible)
 const { client: IndexCPClient, server } = require('indexedcp');
 ```
 
-### Client-Only Usage
-
-For browser environments or when you only need upload capabilities:
-
-```javascript
-const IndexCPClient = require('indexedcp/client');
-
-async function uploadFile() {
-  const client = new IndexCPClient();
-  
-  // Add file to buffer
-  await client.addFile('./myfile.txt');
-  
-  // Upload to server
-  await client.uploadBufferedFiles('http://localhost:3000/upload');
-}
-```
-
-### Server-Only Usage
-
-For server environments that only need to receive uploads:
-
-```javascript
-const { IndexCPServer } = require('indexedcp/server');
-
-const server = new IndexCPServer({
-  port: 3000,
-  outputDir: './uploads'
-});
-
-server.listen(3000, () => {
-  console.log('Server ready to receive uploads');
-});
-```
-
-### Client: Streaming a File with IndexedDB Buffer
-
-This example demonstrates reading a file as a stream, buffering chunks in IndexedDB, and uploading them to a server.
-
-```javascript
-// examples/client-stream.js
-const fs = require('fs');
-const { openDB } = require('idb'); // IndexedDB wrapper
-const fetch = require('node-fetch');
-
-async function bufferAndUpload(filePath, serverUrl) {
-  const db = await openDB('indexcp', 1, {
-    upgrade(db) {
-      db.createObjectStore('chunks', { keyPath: 'id', autoIncrement: true });
-    }
-  });
-
-  const readStream = fs.createReadStream(filePath, { highWaterMark: 1024 * 1024 }); // 1MB chunks
-  let chunkIndex = 0;
-
-  readStream.on('data', async (chunk) => {
-    await db.add('chunks', { id: chunkIndex, data: chunk });
-    chunkIndex++;
-  });
-
-  readStream.on('end', async () => {
-    for (let i = 0; i < chunkIndex; i++) {
-      const record = await db.get('chunks', i);
-      if (record) {
-        await uploadChunk(serverUrl, record.data, i);
-        await db.delete('chunks', i);
-      }
-    }
-    console.log('Upload complete.');
-  });
-}
-
-async function uploadChunk(serverUrl, chunk, index) {
-  const apiKey = process.env.INDEXCP_API_KEY || 'your-api-key-here';
-  
-  await fetch(serverUrl, {
-    method: 'POST',
-    headers: { 
-      'Content-Type': 'application/octet-stream', 
-      'X-Chunk-Index': index,
-      'Authorization': `Bearer ${apiKey}`
-    },
-    body: chunk
-  });
-}
-
-// Usage
-bufferAndUpload('./myfile.txt', 'http://localhost:3000/upload');
-```
-
 ---
 
-### Server: Minimal CLI Example
+## CLI Reference
 
-This example shows a simple Node.js server that receives file chunks and appends them to a file, with API key authentication.
+### Authentication
 
-```javascript
-// examples/server.js
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-
-const OUTPUT_FILE = path.join(__dirname, 'uploaded_file.txt');
-const API_KEY = process.env.INDEXCP_API_KEY || 'your-secure-api-key';
-
-const server = http.createServer((req, res) => {
-  if (req.method === 'POST' && req.url === '/upload') {
-    // Check API key authentication
-    const authHeader = req.headers['authorization'];
-    const providedApiKey = authHeader && authHeader.startsWith('Bearer ') 
-      ? authHeader.slice(7) 
-      : null;
-    if (!providedApiKey || providedApiKey !== API_KEY) {
-      res.writeHead(401, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Invalid or missing API key' }));
-      return;
-    }
-    
-    const writeStream = fs.createWriteStream(OUTPUT_FILE, { flags: 'a' });
-    req.pipe(writeStream);
-    req.on('end', () => {
-      res.writeHead(200);
-      res.end('Chunk received\n');
-    });
-  } else {
-    res.writeHead(404);
-    res.end();
-  }
-});
-
-server.listen(3000, () => {
-  console.log('Server listening on http://localhost:3000');
-  console.log(`API Key: ${API_KEY}`);
-});
-```
-
----
-
-## CLI Usage
-
-### API Key Authentication
-
-IndexCP now requires API key authentication for secure file transfers. The server automatically generates a secure API key if none is provided.
-
-**Recommended approach - Environment Variable:**
+**Recommended: Environment Variable**
 ```bash
 export INDEXCP_API_KEY=your-secure-api-key
-indexcp server 3000 ./uploads
-indexcp upload http://localhost:3000/upload
 ```
 
-**Alternative - Command Line (not recommended for security):**
+**Alternative: Command Line** ⚠️
 ```bash
-# Server with custom API key (shows security warning)
-indexcp server 3000 ./uploads --api-key your-key
-
-# Upload with API key (shows security warning)  
-indexcp upload http://localhost:3000/upload --api-key your-key
+indexedcp upload http://localhost:3000/upload --api-key your-key ./file.txt
 ```
 
-**Automatic prompting:**
-If no API key is set via environment variable or command line, the client will prompt you to enter it securely.
+**Interactive:** If no key is provided, you'll be prompted securely.
 
-### Basic Commands
+### Commands
 
-Add a file to the buffer:
-
+**Start Server**
 ```bash
-indexedcp add ./myfile.txt
+indexedcp server <port> <output-dir> [--api-key <key>] [--path-mode <mode>]
 ```
 
-Start a server (generates random API key if none provided):
+**Path Modes:**
+- `sanitize` (default) - Strip paths, prevent overwrites with unique suffix
+- `allow-paths` - Allow subdirectories (with security validation)
+- `ignore` - Generate unique filenames, ignore client paths
 
+**Upload Files (Single-Step)**
 ```bash
-indexcp server 3000 ./uploads
-# Outputs: Server listening on http://localhost:3000
-# Outputs: API Key: [64-character hex string]
+indexedcp upload <url> [--api-key <key>] <file1> [file2] [...]
 ```
 
-Upload buffered files to a server:
-
+**Upload Files (Two-Step)**
 ```bash
-indexedcp upload http://localhost:3000/upload
+indexedcp add <file1> [file2] [...]
+indexedcp upload <url> [--api-key <key>]
 ```
+
+---
+
+## Path Handling Modes
+
+The server supports three path handling modes to balance security and flexibility:
+
+### `ignore` (Default)
+- Generates unique filenames with format: `<timestamp>_<random>_<full-path>.ext`
+- Path separators (`/` or `\`) replaced with `_` (single underscore)
+- Other illegal characters replaced with `-` (dash) for easy parsing
+- Guarantees no overwrites, perfect for audit trails
+- Maintains complete traceability of original location
+- Example: `reports/data.csv` → `1234567890_a1b2c3d4_reports_data.csv`
+- Example: `my document.txt` → `1234567890_a1b2c3d4_my-document.txt`
+
+### `sanitize`
+- Strips paths, prevents overwrites with session tracking
+- Uses simple filenames from client
+- Example: `dir/file.txt` → `file.txt`
+
+### `allow-paths`
+- Allows subdirectories (with security validation)
+- Best for trusted clients needing organization
+- Example: `reports/2024/data.csv` → `reports/2024/data.csv`
+
+**Usage:**
+```javascript
+// Programmatic (defaults to 'ignore' mode)
+const server = new IndexCPServer({
+  port: 3000,
+  outputDir: './uploads',
+  pathMode: 'ignore'  // or 'sanitize' or 'allow-paths'
+});
+
+// CLI (defaults to 'ignore' mode)
+indexedcp server 3000 ./uploads
+
+# Or specify a different mode
+indexedcp server 3000 ./uploads --path-mode sanitize
+```
+
+See [`docs/PATH-MODES.md`](./docs/PATH-MODES.md) for complete guide.
+
+---
+
+## Examples
+
+See the [`examples/`](./examples/) directory for implementations:
+
+- **client-stream.js** - Stream files with IndexedDB buffering
+- **server.js** - Minimal HTTP server with authentication
+- **client-filename-mapping.js** - Custom filename handling
+- **combined-usage.js** - Full client/server integration
 
 ---
 
 ## Testing
 
-A comprehensive test suite is included to validate all functionality:
-
 ```bash
-npm test
+npm test  # 25 tests: 7 functional + 18 security
+npm run test:path-modes  # 9 path mode tests
 ```
 
-The test suite covers:
-- Basic file uploads
-- Multiple file transfers
-- Large file chunking (5MB+ files)
-- Filename mapping
-- API key authentication
-- Error handling
-- Resume capabilities
+For details, see [`tests/README.md`](./tests/README.md)
 
-For more details, see [TEST-SUITE.md](./TEST-SUITE.md).
+---
+
+## Security
+
+Built-in protection against:
+- Path traversal attacks
+- Unauthorized access  
+- Directory escaping
+
+All uploads are validated and isolated to the configured output directory.
 
 ---
 
@@ -269,12 +197,4 @@ MIT
 
 ## Contributing
 
-Pull requests and issues are welcome!
-
----
-
-## About
-
-IndexCP is designed for robust, resumable, and secure file transfer using modern JavaScript and Node.js.  
-For more information, visit [bluehive.com/integrate?utm_source=bluehive&utm_medium=chat&utm_campaign=bluehive-ai](https://bluehive.com/integrate?utm_source=bluehive&utm_medium=chat&utm_campaign=bluehive-ai)
-```
+Pull requests and issues welcome! Visit [bluehive.com/integrate](https://bluehive.com/integrate?utm_source=bluehive&utm_medium=chat&utm_campaign=bluehive-ai) for more information.

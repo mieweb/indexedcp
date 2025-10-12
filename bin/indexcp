@@ -137,6 +137,7 @@ async function handleServer(args) {
   let port = 3000;
   let outputDir = process.cwd();
   let apiKey = null;
+  let pathMode = 'sanitize'; // default mode
   
   // Parse arguments
   for (let i = 0; i < args.length; i++) {
@@ -150,6 +151,19 @@ async function handleServer(args) {
       apiKey = arg.split('=', 2)[1];
       console.warn('WARNING: Providing API key via command line is not recommended for security reasons.');
       console.warn('Consider setting the INDEXCP_API_KEY environment variable instead.');
+    } else if (arg === '--path-mode' && i + 1 < args.length) {
+      pathMode = args[i + 1];
+      if (!['sanitize', 'allow-paths', 'ignore'].includes(pathMode)) {
+        console.error('ERROR: --path-mode must be one of: sanitize, allow-paths, ignore');
+        process.exit(1);
+      }
+      i++; // Skip the next argument since it's the path mode value
+    } else if (arg.startsWith('--path-mode=')) {
+      pathMode = arg.split('=', 2)[1];
+      if (!['sanitize', 'allow-paths', 'ignore'].includes(pathMode)) {
+        console.error('ERROR: --path-mode must be one of: sanitize, allow-paths, ignore');
+        process.exit(1);
+      }
     } else if (!isNaN(parseInt(arg))) {
       port = parseInt(arg);
     } else {
@@ -164,7 +178,8 @@ async function handleServer(args) {
   }
   
   try {
-    const server = new IndexCPServer({ port, outputDir, apiKey });
+    const server = new IndexCPServer({ port, outputDir, apiKey, pathMode });
+    console.log(`Path handling mode: ${pathMode}`);
     server.listen(port);
     
     // Handle graceful shutdown
@@ -188,7 +203,7 @@ Usage:
   indexedcp upload <server-url> [--api-key <key>] [file1] [file2] ...
                                                       Upload buffered files to server
                                                       Optionally add files in the same command
-  indexedcp server [port] [output-dir] [--api-key <key>]  
+  indexedcp server [port] [output-dir] [--api-key <key>] [--path-mode <mode>]
                                                       Start upload server (default port: 3000)
   indexedcp help                                      Show this help message
 
@@ -196,6 +211,12 @@ API Key Options:
   --api-key <key>     Specify API key (NOT recommended for security)
   Environment var:    Set INDEXCP_API_KEY environment variable (recommended)
   Auto-prompt:        If no API key provided, you will be prompted
+
+Path Mode Options (Server):
+  --path-mode ignore       (Default) Generate unique: <timestamp>_<random>_<full-path>.<ext>
+                           Path separators → _, other special chars → -
+  --path-mode sanitize     Strip all paths, use simple filenames with session tracking
+  --path-mode allow-paths  Allow clients to create subdirectories (with security checks)
 
 Examples:
   # Two-step workflow (add, then upload):
@@ -206,8 +227,14 @@ Examples:
   indexedcp upload http://localhost:3000/upload ./myfile.txt
   indexedcp upload http://localhost:3000/upload ./file1.txt ./file2.txt ./file3.txt
   
-  # Start server:
+  # Start server with default settings (ignore mode - unique filenames):
   indexedcp server 3000 ./uploads
+  
+  # Start server with simple filenames (sanitize mode):
+  indexedcp server 3000 ./uploads --path-mode sanitize
+  
+  # Start server allowing subdirectories (allow-paths mode):
+  indexedcp server 3000 ./uploads --path-mode allow-paths
   
   # Using environment variable (recommended):
   export INDEXCP_API_KEY=your-api-key-here
