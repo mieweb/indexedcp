@@ -240,6 +240,27 @@ indexedcp upload http://localhost:3000/upload
 
 ---
 
+## Testing
+
+A comprehensive test suite is included to validate all functionality:
+
+```bash
+npm test
+```
+
+The test suite covers:
+- Basic file uploads
+- Multiple file transfers
+- Large file chunking (5MB+ files)
+- Filename mapping
+- API key authentication
+- Error handling
+- Resume capabilities
+
+For more details, see [TEST-SUITE.md](./TEST-SUITE.md).
+
+---
+
 ## License
 
 MIT
