@@ -1,7 +1,9 @@
 
 # IndexedCP
 
-**IndexedCP** is a Node.js library and CLI toolset for secure, efficient, and resumable file transfer. It uses IndexedDB on the client side as a buffer for streaming data, enabling robust uploads with offline and resumable support. The server receives file chunks and appends them directly to disk—no IndexedDB required on the server.
+**IndexedCP** is a cross-platform library and CLI toolset for secure, efficient, and resumable file transfer. It uses IndexedDB (Node.js) or SQLite (Python) on the client side as a buffer for streaming data, enabling robust uploads with offline and resumable support. The server receives file chunks and appends them directly to disk—no database required on the server.
+
+Available in **JavaScript (Node.js)** and **Python** implementations.
 
 ---
 
@@ -24,6 +26,8 @@
 
 ## Installation
 
+### JavaScript (Node.js)
+
 ```bash
 npm install -g indexedcp
 ```
@@ -34,11 +38,23 @@ Or as a library:
 npm install indexedcp
 ```
 
+### Python
+
+```bash
+# Install from source
+git clone https://github.com/mieweb/IndexedCP.git
+cd IndexedCP/python
+pip install -r requirements.txt
+
+# Or install directly (if available)
+pip install indexedcp
+```
+
 ---
 
 ## Usage
 
-### Import Options
+### JavaScript Import Options
 
 **IndexedCP** now supports separate imports for client-only and server-only usage, allowing you to include only the code you need:
 
@@ -53,7 +69,17 @@ const { IndexCPServer, createSimpleServer } = require('IndexedCP/server');
 const { client: IndexCPClient, server } = require('IndexedCP');
 ```
 
-### Client-Only Usage
+### Python Import
+
+```python
+# Python client import
+from indexedcp import IndexCPClient
+
+# Create client instance
+client = IndexCPClient()
+```
+
+### JavaScript Client-Only Usage
 
 For browser environments or when you only need upload capabilities:
 
@@ -69,6 +95,24 @@ async function uploadFile() {
   // Upload to server
   await client.uploadBufferedFiles('http://localhost:3000/upload');
 }
+```
+
+### Python Client Usage
+
+```python
+from indexedcp import IndexCPClient
+
+# Create client instance
+client = IndexCPClient()
+
+# Add file to buffer
+client.add_file('./myfile.txt')
+
+# Upload buffered files to server
+results = client.upload_buffered_files('http://localhost:3000/upload')
+
+# Or upload directly without buffering
+client.buffer_and_upload('./myfile.txt', 'http://localhost:3000/upload')
 ```
 
 ### Server-Only Usage
@@ -193,7 +237,9 @@ server.listen(3000, () => {
 
 ## CLI Usage
 
-### API Key Authentication
+### JavaScript CLI
+
+#### API Key Authentication
 
 IndexCP now requires API key authentication for secure file transfers. The server automatically generates a secure API key if none is provided.
 
@@ -216,7 +262,7 @@ indexcp upload http://localhost:3000/upload --api-key your-key
 **Automatic prompting:**
 If no API key is set via environment variable or command line, the client will prompt you to enter it securely.
 
-### Basic Commands
+#### Basic Commands
 
 Add a file to the buffer:
 
@@ -238,6 +284,52 @@ Upload buffered files to a server:
 IndexedCP upload http://localhost:3000/upload
 ```
 
+### Python CLI
+
+The Python client includes similar CLI functionality:
+
+#### Installation and Setup
+
+```bash
+# Set API key (recommended)
+export INDEXCP_API_KEY=your-secure-api-key
+
+# Make CLI script executable (if needed)
+chmod +x python/bin/indexcp
+```
+
+#### Basic Commands
+
+Add a file to the buffer:
+
+```bash
+python3 python/bin/indexcp add ./myfile.txt
+```
+
+List buffered files:
+
+```bash
+python3 python/bin/indexcp list
+```
+
+Upload buffered files to a server:
+
+```bash
+python3 python/bin/indexcp upload http://localhost:3000/upload
+```
+
+Clear the buffer:
+
+```bash
+python3 python/bin/indexcp clear
+```
+
+Direct upload without buffering:
+
+```bash
+python3 python/bin/indexcp buffer-and-upload ./myfile.txt http://localhost:3000/upload
+```
+
 ---
 
 ## License
@@ -254,6 +346,5 @@ Pull requests and issues are welcome!
 
 ## About
 
-IndexCP is designed for robust, resumable, and secure file transfer using modern JavaScript and Node.js.  
+IndexCP is designed for robust, resumable, and secure file transfer using modern JavaScript/Node.js and Python.  
 For more information, visit [bluehive.com/integrate?utm_source=bluehive&utm_medium=chat&utm_campaign=bluehive-ai](https://bluehive.com/integrate?utm_source=bluehive&utm_medium=chat&utm_campaign=bluehive-ai)
-```
