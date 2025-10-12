@@ -66,6 +66,7 @@ async function handleAdd(args) {
 async function handleUpload(args) {
   let serverUrl = null;
   let apiKey = null;
+  let filesToAdd = [];
   
   // Parse arguments
   for (let i = 0; i < args.length; i++) {
@@ -81,20 +82,34 @@ async function handleUpload(args) {
       console.warn('Consider setting the INDEXCP_API_KEY environment variable instead.');
     } else if (!serverUrl) {
       serverUrl = arg;
+    } else {
+      // Any additional arguments are file paths to add and upload
+      filesToAdd.push(arg);
     }
   }
   
   if (!serverUrl) {
     console.error('Error: Server URL is required');
-    console.log('Usage: indexedcp upload <server-url> [--api-key <key>]');
+    console.log('Usage: indexedcp upload <server-url> [--api-key <key>] [file1] [file2] ...');
     process.exit(1);
   }
 
   try {
-    const client = new IndexCPClient();
-    if (apiKey) {
-      client.apiKey = apiKey;
+    const client = new IndexCPClient({ apiKey });
+    
+    // Add any files specified on command line
+    if (filesToAdd.length > 0) {
+      console.log(`Adding ${filesToAdd.length} file(s) to buffer...`);
+      for (const filePath of filesToAdd) {
+        if (!fs.existsSync(filePath)) {
+          console.error(`Error: File not found: ${filePath}`);
+          process.exit(1);
+        }
+        await client.addFile(filePath);
+        console.log(`  Added: ${filePath}`);
+      }
     }
+    
     const uploadResults = await client.uploadBufferedFiles(serverUrl);
     
     console.log('All buffered files uploaded successfully');
@@ -169,10 +184,13 @@ function showHelp() {
 indexedcp - Secure, resumable file transfer with IndexedDB buffering
 
 Usage:
-  indexedcp add <file-path>                      Add a file to the buffer
-  indexedcp upload <server-url> [--api-key <key>]  Upload buffered files to server
-  indexedcp server [port] [output-dir] [--api-key <key>]  Start upload server (default port: 3000)
-  indexedcp help                                Show this help message
+  indexedcp add <file-path>                           Add a file to the buffer
+  indexedcp upload <server-url> [--api-key <key>] [file1] [file2] ...
+                                                      Upload buffered files to server
+                                                      Optionally add files in the same command
+  indexedcp server [port] [output-dir] [--api-key <key>]  
+                                                      Start upload server (default port: 3000)
+  indexedcp help                                      Show this help message
 
 API Key Options:
   --api-key <key>     Specify API key (NOT recommended for security)
@@ -180,16 +198,23 @@ API Key Options:
   Auto-prompt:        If no API key provided, you will be prompted
 
 Examples:
+  # Two-step workflow (add, then upload):
   indexedcp add ./myfile.txt
   indexedcp upload http://localhost:3000/upload
+  
+  # Single-step workflow (add and upload in one command):
+  indexedcp upload http://localhost:3000/upload ./myfile.txt
+  indexedcp upload http://localhost:3000/upload ./file1.txt ./file2.txt ./file3.txt
+  
+  # Start server:
   indexedcp server 3000 ./uploads
   
   # Using environment variable (recommended):
   export INDEXCP_API_KEY=your-api-key-here
-  indexcp upload http://localhost:3000/upload
+  indexedcp upload http://localhost:3000/upload ./myfile.txt
   
   # Using command line (not recommended):
-  indexcp upload http://localhost:3000/upload --api-key your-key-here
+  indexedcp upload http://localhost:3000/upload --api-key your-key ./myfile.txt
 `);
 }
 
