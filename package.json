@@ -1,5 +1,5 @@
 {
-  "name": "IndexedCP",
+  "name": "indexedcp",
   "version": "1.0.0",
   "description": "Node.js library and CLI toolset for secure, efficient, and resumable file transfer with IndexedDB buffering",
   "main": "index.js",
@@ -9,7 +9,7 @@
     "./server": "./server.js"
   },
   "bin": {
-    "IndexedCP": "./bin/indexcp"
+    "indexedcp": "./bin/indexcp"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -35,6 +35,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/mieweb/IndexedCP.git"
+    "url": "https://github.com/mieweb/indexedcp.git"
   }
 }

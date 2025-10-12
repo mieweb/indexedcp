@@ -1,5 +1,5 @@
 // Example: Server with custom filename generation
-const { IndexCPServer } = require('IndexedCP/server');
+const { IndexCPServer } = require('indexedcp/server');
 const crypto = require('crypto');
 const path = require('path');
 

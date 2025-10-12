@@ -44,7 +44,7 @@ async function handleAdd(args) {
   
   if (!filePath) {
     console.error('Error: File path is required');
-    console.log('Usage: IndexedCP add <file-path>');
+    console.log('Usage: indexedcp add <file-path>');
     process.exit(1);
   }
 
@@ -86,7 +86,7 @@ async function handleUpload(args) {
   
   if (!serverUrl) {
     console.error('Error: Server URL is required');
-    console.log('Usage: IndexedCP upload <server-url> [--api-key <key>]');
+    console.log('Usage: indexedcp upload <server-url> [--api-key <key>]');
     process.exit(1);
   }
 
@@ -166,13 +166,13 @@ async function handleServer(args) {
 
 function showHelp() {
   console.log(`
-IndexedCP - Secure, resumable file transfer with IndexedDB buffering
+indexedcp - Secure, resumable file transfer with IndexedDB buffering
 
 Usage:
-  IndexedCP add <file-path>                      Add a file to the buffer
-  IndexedCP upload <server-url> [--api-key <key>]  Upload buffered files to server
-  IndexedCP server [port] [output-dir] [--api-key <key>]  Start upload server (default port: 3000)
-  IndexedCP help                                Show this help message
+  indexedcp add <file-path>                      Add a file to the buffer
+  indexedcp upload <server-url> [--api-key <key>]  Upload buffered files to server
+  indexedcp server [port] [output-dir] [--api-key <key>]  Start upload server (default port: 3000)
+  indexedcp help                                Show this help message
 
 API Key Options:
   --api-key <key>     Specify API key (NOT recommended for security)
@@ -180,9 +180,9 @@ API Key Options:
   Auto-prompt:        If no API key provided, you will be prompted
 
 Examples:
-  IndexedCP add ./myfile.txt
-  IndexedCP upload http://localhost:3000/upload
-  IndexedCP server 3000 ./uploads
+  indexedcp add ./myfile.txt
+  indexedcp upload http://localhost:3000/upload
+  indexedcp server 3000 ./uploads
   
   # Using environment variable (recommended):
   export INDEXCP_API_KEY=your-api-key-here
