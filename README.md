@@ -1,14 +1,14 @@
 
 # indexedcp
 
-**indexedcp** is a Node.js library and CLI toolset for secure, efficient, and resumable file transfer. It uses IndexedDB on the client side as a buffer for streaming data, enabling robust uploads with offline and resumable support.
+**indexedcp** is a Node.js library and CLI toolset for secure, efficient, and resumable file transfer. By default, Node.js environments buffer uploads on disk (`~/.indexcp/db/chunks.json`) so transfers survive restarts, while browser builds fall back to IndexedDB for offline and resumable support.
 
 ---
 
 ## Features
 
 - 🔄 Resumable and offline-friendly uploads
-- 📦 Chunked streaming with IndexedDB buffering
+- 📦 Chunked streaming with persistent buffering (filesystem on Node, IndexedDB in browsers)
 - 🔒 API key authentication
 - 🛡️ Path traversal protection
 - 📦 Separate client/server imports for minimal bundle size
@@ -51,6 +51,19 @@ await client.uploadBufferedFiles('http://localhost:3000/upload');
 // Server (receive)
 const { IndexCPServer } = require('indexedcp/server');
 new IndexCPServer({ port: 3000, outputDir: './uploads' }).listen(3000);
+```
+
+---
+
+## Storage Modes
+
+- **Node.js (default):** Chunks persist to the local filesystem at `~/.indexcp/db/chunks.json`, ensuring buffered uploads survive restarts.
+- **Force in-memory IndexedDB:** Set `INDEXCP_CLI_MODE=false` before creating the client to revert to the previous fake-IndexedDB behaviour (useful for ephemeral test runs).
+- **Browsers:** Always use the platform’s IndexedDB implementation; no filesystem access is attempted.
+
+```bash
+# Example: opt into in-memory storage for a single run
+INDEXCP_CLI_MODE=false node upload-script.js
 ```
 
 ---
