@@ -66,6 +66,8 @@ new IndexCPServer({ port: 3000, outputDir: './uploads' }).listen(3000);
 INDEXCP_CLI_MODE=false node upload-script.js
 ```
 
+> **📖 For migration details and technical information, see [SQLite Migration Guide](./docs/SQLITE-MIGRATION.md)**
+
 ---
 
 ## Import Options
