@@ -3,6 +3,8 @@
 
 **indexedcp** is a Node.js library and CLI toolset for secure, efficient, and resumable file transfer. By default, Node.js environments buffer uploads on disk (`~/.indexcp/db/chunks.json`) so transfers survive restarts, while browser builds fall back to IndexedDB for offline and resumable support.
 
+🔐 **NEW:** [Asymmetric envelope encryption](#-encryption) protects data at rest with per-stream AES keys wrapped by RSA public keys.
+
 ---
 
 ## Features
@@ -10,6 +12,7 @@
 - 🔄 Resumable and offline-friendly uploads
 - 📦 Chunked streaming with persistent buffering (filesystem on Node, IndexedDB in browsers)
 - 🔒 API key authentication
+- 🔐 **Asymmetric encryption** - End-to-end encrypted storage with offline support
 - 🛡️ Path traversal protection
 - 📦 Separate client/server imports for minimal bundle size
 - 🔧 Simple CLI tools
@@ -177,14 +180,69 @@ See the [`examples/`](./examples/) directory for implementations:
 - **server.js** - Minimal HTTP server with authentication
 - **client-filename-mapping.js** - Custom filename handling
 - **combined-usage.js** - Full client/server integration
+- **encryption-demo.js** - 🔐 Complete end-to-end encryption demo
+- **mongodb-keystore.js** - 🔐 Encryption with MongoDB keystore
+
+---
+
+## 🔐 Encryption
+
+IndexedCP supports **asymmetric envelope encryption** to protect data at rest in IndexedDB. Each streaming session uses an ephemeral AES-256 key, wrapped with the server's RSA public key. Only the server can decrypt the data.
+
+### Quick Start
+
+**Server:**
+```javascript
+const { IndexCPServer } = require('indexedcp/lib/server');
+const server = new IndexCPServer({ 
+  port: 3000,
+  encryption: true  // Enable encryption support
+});
+await server.listen(3000);
+// Automatically generates RSA key pair
+// GET /public-key - Clients fetch this
+// POST /upload-encrypted - Receive encrypted packets
+```
+
+**Client:**
+```javascript
+const IndexCPClient = require('indexedcp/lib/client');
+const client = new IndexCPClient({
+  serverUrl: 'http://localhost:3000',
+  apiKey: 'your-key',
+  encryption: true  // Enable encryption support
+});
+
+// Fetch public key once (caches for offline use)
+await client.fetchPublicKey();
+
+// Encrypt and buffer files
+await client.addFile('./sensitive-data.txt');
+
+// Upload encrypted packets
+await client.uploadBufferedFiles('http://localhost:3000');
+```
+
+### Key Features
+
+- ✅ **Per-stream session keys** - New AES-256 key for each file
+- ✅ **RSA-OAEP key wrapping** - Session keys encrypted with server's public key
+- ✅ **Offline encryption** - Works offline after initial key fetch
+- ✅ **Key rotation** - Rotate server keys without invalidating queued data
+- ✅ **No plaintext in storage** - IndexedDB contains only ciphertext and wrapped keys
+
+**📚 Full documentation:** [`docs/ENCRYPTION.md`](./docs/ENCRYPTION.md) | [Migration Guide](./docs/MIGRATION-GUIDE.md)
 
 ---
 
 ## Testing
 
 ```bash
-npm test  # 25 tests: 7 functional + 18 security
-npm run test:path-modes  # 9 path mode tests
+npm test                   # All tests
+npm run test:functional    # 7 functional tests
+npm run test:security      # 18 security tests
+npm run test:path-modes    # 9 path mode tests
+npm run test:encryption    # 9 encryption tests
 ```
 
 For details, see [`tests/README.md`](./tests/README.md)

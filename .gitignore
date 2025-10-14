@@ -142,3 +142,19 @@ vite.config.ts.timestamp-*
 *test*.txt
 test-*.js
 *-test-*
+
+# Keystore files (contain private keys - never commit!)
+server-keys/*.json
+server-keys/*.key
+server-keys/*.pem
+*.key
+*.pem
+
+# Test and temporary directories
+.test-*
+uploads/
+uploads-*/
+
+# Dead code archive (attic)
+.attic/*
+!.attic/README.md

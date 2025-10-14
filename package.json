@@ -15,7 +15,8 @@
     "test": "node tests/test-all.js",
     "test:functional": "node tests/test-all-examples.js",
     "test:security": "node tests/security-test.js",
-    "test:path-modes": "node tests/test-path-modes.js"
+    "test:path-modes": "node tests/test-path-modes.js",
+    "test:encryption": "node tests/test-encryption.js"
   },
   "keywords": [
     "file-transfer",

@@ -48,7 +48,8 @@ async function runAllTests() {
   const tests = [
     { script: './test-all-examples.js', name: 'Functional Tests' },
     { script: './security-test.js', name: 'Security Tests' },
-    { script: './test-restart-persistence.js', name: 'Restart Persistence Tests' }
+    { script: './test-restart-persistence.js', name: 'Restart Persistence Tests' },
+    { script: './test-encryption.js', name: 'Encryption Tests' }
   ];
 
   const results = [];
