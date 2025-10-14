@@ -31,7 +31,10 @@
   "dependencies": {
     "fake-indexeddb": "^6.0.1",
     "idb": "^7.1.1",
-    "node-fetch": "^2.7.0"
+    "indexeddbshim": "^16.1.0",
+    "node-fetch": "^2.7.0",
+    "setimmediate": "^1.0.5",
+    "websql": "^2.0.3"
   },
   "engines": {
     "node": ">=18.0.0"

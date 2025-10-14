@@ -41,7 +41,7 @@ const fs = require('fs');
 const os = require('os');
 
 const TEST_DIR = path.join(__dirname, 'temp-restart-test');
-const DB_PATH = path.join(os.homedir(), '.indexcp', 'db', 'chunks.json');
+const DB_PATH = path.join(os.homedir(), '.indexcp', 'db', 'indexedcp.sqlite');
 
 // Colors for output
 const colors = {
@@ -157,9 +157,30 @@ async function testRestartPersistence() {
     log(`✓ Database persisted at ${DB_PATH}`, 'green');
     testsPassed++;
     
-    // Read the database to verify content
-    const dbContent = JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
-    const chunkCount = Array.isArray(dbContent) ? dbContent.length : 0;
+    // Verify the database has records (we'll do this by querying in a separate process)
+    const countScript = `
+      const IndexCPClient = require('${path.join(__dirname, '..', 'lib', 'client.js')}');
+      
+      async function countChunks() {
+        const client = new IndexCPClient();
+        const db = await client.initDB();
+        const tx = db.transaction('chunks', 'readonly');
+        const store = tx.objectStore('chunks');
+        const chunks = await store.getAll();
+        if (tx.done) await tx.done;
+        
+        console.log('COUNT:' + chunks.length);
+      }
+      
+      countChunks().catch(err => {
+        console.error('Error:', err.message);
+        process.exit(1);
+      });
+    `;
+    
+    const countResult = await runNodeScript(countScript);
+    const countMatch = countResult.stdout.match(/COUNT:(\d+)/);
+    const chunkCount = countMatch ? parseInt(countMatch[1]) : 0;
     log(`✓ Database contains ${chunkCount} chunk(s)`, 'green');
     
     if (chunkCount !== 3) {
@@ -273,11 +294,11 @@ async function testRestartPersistence() {
       
       async function verifyCleared() {
         const client = new IndexCPClient();
-        const db = await client.db;
+        const db = await client.initDB();
         const tx = db.transaction('chunks', 'readonly');
         const store = tx.objectStore('chunks');
         const chunks = await store.getAll();
-        await tx.done;
+        if (tx.done) await tx.done;
         
         console.log('Chunks remaining: ' + chunks.length);
       }
@@ -288,10 +309,8 @@ async function testRestartPersistence() {
     const result4 = await runNodeScript(verifyScript);
     log(result4.stdout.trim(), 'blue');
     
-    // Check if buffer is empty (either "Chunks remaining: 0" or no database file)
-    const bufferCleared = result4.stdout.includes('Chunks remaining: 0') || 
-                          !fs.existsSync(DB_PATH) ||
-                          JSON.parse(fs.readFileSync(DB_PATH, 'utf8') || '[]').length === 0;
+    // Check if buffer is empty
+    const bufferCleared = result4.stdout.includes('Chunks remaining: 0');
     
     if (!bufferCleared) {
       throw new Error('Buffer was not cleared after successful upload');

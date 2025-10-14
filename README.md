@@ -1,7 +1,7 @@
 
 # indexedcp
 
-**indexedcp** is a Node.js library and CLI toolset for secure, efficient, and resumable file transfer. By default, Node.js environments buffer uploads on disk (`~/.indexcp/db/chunks.json`) so transfers survive restarts, while browser builds fall back to IndexedDB for offline and resumable support.
+**indexedcp** is a Node.js library and CLI toolset for secure, efficient, and resumable file transfer. By default, Node.js environments buffer uploads in a SQLite database (`~/.indexcp/db/indexedcp.sqlite`) using IndexedDBShim + WebSQL so transfers survive restarts with full transactional consistency, while browser builds use native IndexedDB for offline and resumable support.
 
 ---
 
@@ -57,7 +57,7 @@ new IndexCPServer({ port: 3000, outputDir: './uploads' }).listen(3000);
 
 ## Storage Modes
 
-- **Node.js (default):** Chunks persist to the local filesystem at `~/.indexcp/db/chunks.json`, ensuring buffered uploads survive restarts.
+- **Node.js (default):** Chunks persist to a local SQLite database via IndexedDBShim + WebSQL at `~/.indexcp/db/indexedcp.sqlite`, ensuring buffered uploads survive restarts with full transactional consistency.
 - **Force in-memory IndexedDB:** Set `INDEXCP_CLI_MODE=false` before creating the client to revert to the previous fake-IndexedDB behaviour (useful for ephemeral test runs).
 - **Browsers:** Always use the platform’s IndexedDB implementation; no filesystem access is attempted.
 
