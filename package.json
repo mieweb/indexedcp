@@ -1,7 +1,7 @@
 {
   "name": "indexedcp",
   "version": "1.0.0",
-  "description": "Node.js library and CLI toolset for secure, efficient, and resumable file transfer with IndexedDB buffering",
+  "description": "Node.js library and CLI toolset for secure, efficient, and resumable file transfer with SQLite-backed IndexedDB storage",
   "main": "index.js",
   "exports": {
     ".": "./index.js",

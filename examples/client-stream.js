@@ -1,8 +1,12 @@
 // examples/client-stream.js
+// NOTE: This example demonstrates manual IndexedDB usage with fake-indexeddb.
+// For production use with persistent storage, use the IndexCPClient class instead,
+// which uses SQLite-backed storage by default in Node.js.
+
 const fs = require('fs');
 const fetch = require('node-fetch');
 
-// Set up IndexedDB for Node.js environment
+// Set up IndexedDB for Node.js environment (in-memory for this example)
 require('fake-indexeddb/auto');
 const { openDB } = require('idb'); // IndexedDB wrapper
 
