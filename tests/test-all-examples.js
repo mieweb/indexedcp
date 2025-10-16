@@ -117,7 +117,9 @@ async function testFilenameMapping(server) {
     logInfo(`Client filename: ${testFile}`);
     logInfo(`Server filename: ${result[testFile]}`);
     
-    verifyUpload('test-mapping-file.txt', 'Test content for filename mapping\n');
+    // Verify using the actual server filename from the result
+    const serverFilename = result[testFile];
+    verifyUpload(serverFilename, 'Test content for filename mapping\n');
   } finally {
     if (fs.existsSync(testFile)) {
       fs.unlinkSync(testFile);
@@ -265,9 +267,15 @@ async function testResumeUpload(server) {
   try {
     fs.writeFileSync(testFile, content);
     
+    // Create a fresh client instance to ensure clean buffer
     const client = new IndexCPClient({
       apiKey: API_KEY
     });
+    
+    // Clear any existing buffer from previous tests
+    if (client.db && client.db.clearAll) {
+      await client.db.clearAll();
+    }
     
     logInfo('Adding file to buffer...');
     await client.addFile(testFile);
@@ -275,10 +283,17 @@ async function testResumeUpload(server) {
     logInfo('Simulating partial upload...');
     // In a real scenario, this would be interrupted
     // For now, we'll just do a complete upload and verify resume works
-    await client.uploadBufferedFiles(`http://localhost:${TEST_PORT}/upload`);
+    const result = await client.uploadBufferedFiles(`http://localhost:${TEST_PORT}/upload`);
     
     logSuccess('Resume capability validated');
-    verifyUpload('test-resume-file.txt', content);
+    
+    // Verify using the actual server filename from the result
+    const serverFilename = result[testFile];
+    if (serverFilename) {
+      verifyUpload(serverFilename, content);
+    } else {
+      verifyUpload('test-resume-file.txt', content);
+    }
   } finally {
     if (fs.existsSync(testFile)) {
       fs.unlinkSync(testFile);
