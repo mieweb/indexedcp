@@ -138,8 +138,9 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
-# Test files
+# Test files (but allow files in tests/ directory)
 *test*.txt
+!tests/
 test-*.js
 *-test-*
 
