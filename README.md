@@ -27,236 +27,90 @@ npm install -g indexedcp
 
 ---
 
-## Quick Start
+## Usage
 
-### CLI Usage
+### Quick Start for Browsers & Node.js
+Minimal setup for a client to queue and send a stream encrypted.  Packets are kept in IndexedDB until confirmed by the server. The example starts a startUploadBackground() task that works to upload any packets in the background. Then it opens a MediaStream from the microphone, but any ReadableStream can be used.
 
-```bash
-# Set your API key
-export INDEXCP_API_KEY=your-secure-api-key
-
-# Start server
-indexedcp server 3000 ./uploads
-
-# Upload files (single-step)
-indexedcp upload http://localhost:3000/upload ./file1.txt ./file2.txt
-```
-
-### Programmatic Usage
-
-```javascript
-// Client (upload)
-const IndexCPClient = require('indexedcp/client');
-const client = new IndexCPClient({ apiKey: 'your-key' });
-await client.addFile('./myfile.txt');
-await client.uploadBufferedFiles('http://localhost:3000/upload');
-
-// Server (receive)
-const { IndexCPServer } = require('indexedcp/server');
-new IndexCPServer({ port: 3000, outputDir: './uploads' }).listen(3000);
-```
-
----
-
-## Storage Modes
-
-- **Node.js (default):** Chunks persist to the local filesystem at `~/.indexcp/db/chunks.json`, ensuring buffered uploads survive restarts.
-- **Force in-memory IndexedDB:** Set `INDEXCP_CLI_MODE=false` before creating the client to revert to the previous fake-IndexedDB behaviour (useful for ephemeral test runs).
-- **Browsers:** Always use the platform’s IndexedDB implementation; no filesystem access is attempted.
-
-```bash
-# Example: opt into in-memory storage for a single run
-INDEXCP_CLI_MODE=false node upload-script.js
-```
-
----
-
-## Import Options
-
-Choose the import style that fits your needs:
-
-```javascript
-// Client-only (browser/upload)
-const IndexCPClient = require('indexedcp/client');
-
-// Server-only (receive)
-const { IndexCPServer } = require('indexedcp/server');
-
-// Combined (both - backward compatible)
-const { client: IndexCPClient, server } = require('indexedcp');
-```
-
----
-
-## CLI Reference
-
-### Authentication
-
-**Recommended: Environment Variable**
-```bash
-export INDEXCP_API_KEY=your-secure-api-key
-```
-
-**Alternative: Command Line** ⚠️
-```bash
-indexedcp upload http://localhost:3000/upload --api-key your-key ./file.txt
-```
-
-**Interactive:** If no key is provided, you'll be prompted securely.
-
-### Commands
-
-**Start Server**
-```bash
-indexedcp server <port> <output-dir> [--api-key <key>] [--path-mode <mode>]
-```
-
-**Path Modes:**
-- `sanitize` (default) - Strip paths, prevent overwrites with unique suffix
-- `allow-paths` - Allow subdirectories (with security validation)
-- `ignore` - Generate unique filenames, ignore client paths
-
-**Upload Files (Single-Step)**
-```bash
-indexedcp upload <url> [--api-key <key>] <file1> [file2] [...]
-```
-
-**Upload Files (Two-Step)**
-```bash
-indexedcp add <file1> [file2] [...]
-indexedcp upload <url> [--api-key <key>]
-```
-
----
-
-## Path Handling Modes
-
-The server supports three path handling modes to balance security and flexibility:
-
-### `ignore` (Default)
-- Generates unique filenames with format: `<timestamp>_<random>_<full-path>.ext`
-- Path separators (`/` or `\`) replaced with `_` (single underscore)
-- Other illegal characters replaced with `-` (dash) for easy parsing
-- Guarantees no overwrites, perfect for audit trails
-- Maintains complete traceability of original location
-- Example: `reports/data.csv` → `1234567890_a1b2c3d4_reports_data.csv`
-- Example: `my document.txt` → `1234567890_a1b2c3d4_my-document.txt`
-
-### `sanitize`
-- Strips paths, prevents overwrites with session tracking
-- Uses simple filenames from client
-- Example: `dir/file.txt` → `file.txt`
-
-### `allow-paths`
-- Allows subdirectories (with security validation)
-- Best for trusted clients needing organization
-- Example: `reports/2024/data.csv` → `reports/2024/data.csv`
-
-**Usage:**
-```javascript
-// Programmatic (defaults to 'ignore' mode)
-const server = new IndexCPServer({
-  port: 3000,
-  outputDir: './uploads',
-  pathMode: 'ignore'  // or 'sanitize' or 'allow-paths'
-});
-
-// CLI (defaults to 'ignore' mode)
-indexedcp server 3000 ./uploads
-
-# Or specify a different mode
-indexedcp server 3000 ./uploads --path-mode sanitize
-```
-
-See [`docs/PATH-MODES.md`](./docs/PATH-MODES.md) for complete guide.
-
----
-
-## Examples
-
-See the [`examples/`](./examples/) directory for implementations:
-
-- **client-stream.js** - Stream files with IndexedDB buffering
-- **server.js** - Minimal HTTP server with authentication
-- **client-filename-mapping.js** - Custom filename handling
-- **combined-usage.js** - Full client/server integration
-- **encryption-demo.js** - 🔐 Complete end-to-end encryption demo
-- **mongodb-keystore.js** - 🔐 Encryption with MongoDB keystore
-
----
-
-## 🔐 Encryption
-
-IndexedCP supports **asymmetric envelope encryption** to protect data at rest in IndexedDB. Each streaming session uses an ephemeral AES-256 key, wrapped with the server's RSA public key. Only the server can decrypt the data.
-
-### Quick Start
-
-**Server:**
-```javascript
-const { IndexCPServer } = require('indexedcp/lib/server');
-const server = new IndexCPServer({ 
-  port: 3000,
-  encryption: true  // Enable encryption support
-});
-await server.listen(3000);
-// Automatically generates RSA key pair
-// GET /public-key - Clients fetch this
-// POST /upload-encrypted - Receive encrypted packets
-```
-
-**Client:**
 ```javascript
 const IndexCPClient = require('indexedcp/lib/client');
 const client = new IndexCPClient({
   serverUrl: 'http://localhost:3000',
-  apiKey: 'your-key',
-  encryption: true  // Enable encryption support
+  apiKey: 'your-key'
 });
 
-// Fetch public key once (caches for offline use)
-await client.fetchPublicKey();
+client.startUploadBackground();
 
-// Encrypt and buffer files
-await client.addFile('./sensitive-data.txt');
-
-// Upload encrypted packets
-await client.uploadBufferedFiles('http://localhost:3000');
+navigator.mediaDevices.getUserMedia({ audio: true })
+  .then(stream => {
+    const reader = stream.getReader();
+    client.sendStream(reader);
+  })
+  .catch(error => {
+    console.error('Error accessing media devices.', error);
+  });
 ```
 
-### Key Features
+### Quick Start for Servers
 
-- ✅ **Per-stream session keys** - New AES-256 key for each file
-- ✅ **RSA-OAEP key wrapping** - Session keys encrypted with server's public key
-- ✅ **Offline encryption** - Works offline after initial key fetch
-- ✅ **Key rotation** - Rotate server keys without invalidating queued data
-- ✅ **No plaintext in storage** - IndexedDB contains only ciphertext and wrapped keys
+```javascript
+const EncryptedServer = require('indexedcp/lib/encrypted-server');
+const server = new EncryptedServer({
+  port: 3000,
+  apiKey: 'your-key'
+});
 
-**📚 Full documentation:** [`docs/ENCRYPTION.md`](./docs/ENCRYPTION.md) | [Migration Guide](./docs/MIGRATION-GUIDE.md)
+server.start();
+``` 
 
----
-
-## Testing
+### CLI Examples
 
 ```bash
-npm test                   # All tests
-npm run test:functional    # 7 functional tests
-npm run test:security      # 18 security tests
-npm run test:path-modes    # 9 path mode tests
-npm run test:encryption    # 9 encryption tests
+# Set API key
+export INDEXCP_API_KEY=your-key
+# Start server
+indexcp server --port 3000 --apiKey your-key
+# Upload file
+## cp style command line
+indexcp file_to_upload http://localhost:3000
+## explicit upload command
+indexcp upload --server http://localhost:3000 [file1 file2 ...]
 ```
 
-For details, see [`tests/README.md`](./tests/README.md)
+## Documentation of API
 
----
+### Diagram (sequence)
+```mermaid
+sequenceDiagram
+    participant Client
+    participant IndexedDB
+    participant UploadTask
+    participant Server
 
-## Security
+    Client->>Server: GET /public-key
+    Server-->>Client: Public Key (PEM)
+    Client->>Client: Generate AES session key
+    Client->>Client: Encrypt session key with RSA public key
+    Client->>Client: Store public key, encrypted session key
+    Client->>Client: Read data from stream
+    Client->>Client: Encrypt data with AES session key
+    Client->>IndexedDB: Store encrypted packet (status='pending')
+    UploadTask->>IndexedDB: Fetch pending packets
+    UploadTask->>Server: POST /upload (with encrypted packet)
+    Server-->>UploadTask: 200 OK
+    UploadTask->>IndexedDB: Delete uploaded packet
+    Client->>Client: On stream end, finalize upload
+    Client->>IndexedDB: Clear session data
+    Server->>Server: Decrypt session key with RSA private key
+    Server->>Server: Decrypt packets with AES session key
+    Server->>Server: Store or process decrypted data
+    Note over Client,Server: Repeat for each file or stream
+```
 
-Built-in protection against:
-- Path traversal attacks
-- Unauthorized access  
-- Directory escaping
+### API Client
 
-All uploads are validated and isolated to the configured output directory.
+
+### API Server
 
 ---
 
