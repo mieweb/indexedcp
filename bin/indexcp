@@ -5,8 +5,11 @@ process.env.INDEXCP_CLI_MODE = 'true';
 
 const IndexCPClient = require('../lib/client');
 const { IndexCPServer } = require('../lib/server');
+const { createLogger } = require('../lib/logger');
 const path = require('path');
 const fs = require('fs');
+
+const logger = createLogger({ prefix: '[IndexCP-CLI]' });
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -47,7 +50,7 @@ async function main() {
       showHelp();
       break;
     default:
-      console.error(`Unknown command: ${command}`);
+      logger.error(`Unknown command: ${command}`);
       showHelp();
       process.exit(1);
   }
@@ -58,28 +61,28 @@ async function handleCpStyle(args) {
   const serverUrl = args[1];
   
   if (!fs.existsSync(filePath)) {
-    console.error(`Error: File not found: ${filePath}`);
+    logger.error(`Error: File not found: ${filePath}`);
     process.exit(1);
   }
 
   try {
     const client = new IndexCPClient();
-    console.log(`Adding ${filePath} to buffer...`);
+    logger.info(`Adding ${filePath} to buffer...`);
     await client.addFile(filePath);
-    console.log(`Uploading to ${serverUrl}...`);
+    logger.info(`Uploading to ${serverUrl}...`);
     const uploadResults = await client.uploadBufferedFiles(serverUrl);
-    console.log(`Successfully uploaded ${filePath}`);
+    logger.info(`Successfully uploaded ${filePath}`);
     
     // Display server filename if it differs from client name
     if (uploadResults) {
       const serverName = uploadResults[filePath];
       const basename = require('path').basename(filePath);
       if (serverName && serverName !== basename) {
-        console.log(`Server filename: ${serverName}`);
+        logger.info(`Server filename: ${serverName}`);
       }
     }
   } catch (error) {
-    console.error('Error uploading file:', error.message);
+    logger.error('Error uploading file:', error.message);
     process.exit(1);
   }
 }
@@ -88,22 +91,22 @@ async function handleAdd(args) {
   const filePath = args[0];
   
   if (!filePath) {
-    console.error('Error: File path is required');
-    console.log('Usage: indexedcp add <file-path>');
+    logger.error('Error: File path is required');
+    logger.info('Usage: indexedcp add <file-path>');
     process.exit(1);
   }
 
   if (!fs.existsSync(filePath)) {
-    console.error(`Error: File not found: ${filePath}`);
+    logger.error(`Error: File not found: ${filePath}`);
     process.exit(1);
   }
 
   try {
     const client = new IndexCPClient();
     await client.addFile(filePath);
-    console.log(`File ${filePath} successfully added to buffer`);
+    logger.info(`File ${filePath} successfully added to buffer`);
   } catch (error) {
-    console.error('Error adding file:', error.message);
+    logger.error('Error adding file:', error.message);
     process.exit(1);
   }
 }
@@ -117,7 +120,7 @@ async function handleList(args) {
     const chunks = await db.getAll(client.storeName);
     
     if (chunks.length === 0) {
-      console.log('No files in buffer');
+      logger.info('No files in buffer');
       return;
     }
     
@@ -140,10 +143,10 @@ async function handleList(args) {
       fileInfo.totalSize += chunk.data ? chunk.data.byteLength || chunk.data.length : 0;
     }
     
-    console.log(`\nIndexedDB Buffer Status:`);
-    console.log(`Total files: ${fileMap.size}`);
-    console.log(`Total chunks: ${chunks.length}`);
-    console.log('');
+    logger.info(`\nIndexedDB Buffer Status:`);
+    logger.info(`Total files: ${fileMap.size}`);
+    logger.info(`Total chunks: ${chunks.length}`);
+    logger.info('');
     
     // Sort files by name
     const files = Array.from(fileMap.values()).sort((a, b) => 
@@ -155,8 +158,8 @@ async function handleList(args) {
       const encryptedFlag = file.encrypted ? '🔒' : '  ';
       const sessionInfo = file.session ? ` [session: ${file.session.substring(0, 8)}...]` : '';
       
-      console.log(`${encryptedFlag} ${file.fileName}`);
-      console.log(`   ${file.chunks.length} chunk(s), ${sizeKB} KB${sessionInfo}`);
+      logger.info(`${encryptedFlag} ${file.fileName}`);
+      logger.info(`   ${file.chunks.length} chunk(s), ${sizeKB} KB${sessionInfo}`);
       
       if (verbose) {
         // Show chunk details
@@ -167,7 +170,7 @@ async function handleList(args) {
           const chunkSizeKB = (chunkSize / 1024).toFixed(2);
           const retryInfo = chunk.retryMetadata ? 
             ` [retries: ${chunk.retryMetadata.retryCount || 0}, next: ${new Date(chunk.retryMetadata.nextRetry).toLocaleTimeString()}]` : '';
-          console.log(`     - Chunk ${index}: ${chunkSizeKB} KB${retryInfo}`);
+          logger.info(`     - Chunk ${index}: ${chunkSizeKB} KB${retryInfo}`);
         }
       }
       
@@ -176,17 +179,17 @@ async function handleList(args) {
         const hasRetries = file.chunks.some(c => c.retryMetadata && c.retryMetadata.retryCount > 0);
         if (hasRetries) {
           const maxRetries = Math.max(...file.chunks.map(c => c.retryMetadata?.retryCount || 0));
-          console.log(`   ⚠️  Has failed uploads (max retries: ${maxRetries})`);
+          logger.info(`   ⚠️  Has failed uploads (max retries: ${maxRetries})`);
         }
       }
       
-      console.log('');
+      logger.info('');
     }
     
-    console.log(`Use 'indexcp ls -v' for verbose chunk details\n`);
+    logger.info(`Use 'indexcp ls -v' for verbose chunk details\n`);
     
   } catch (error) {
-    console.error('Error listing buffer:', error.message);
+    logger.error('Error listing buffer:', error.message);
     process.exit(1);
   }
 }
@@ -206,13 +209,13 @@ async function handleUpload(args) {
       serverUrl = arg.split('=', 2)[1];
     } else if (arg === '--api-key' && i + 1 < args.length) {
       apiKey = args[i + 1];
-      console.warn('WARNING: Providing API key via command line is not recommended for security reasons.');
-      console.warn('Consider setting the INDEXCP_API_KEY environment variable instead.');
+      logger.warn('WARNING: Providing API key via command line is not recommended for security reasons.');
+      logger.warn('Consider setting the INDEXCP_API_KEY environment variable instead.');
       i++; // Skip the next argument since it's the API key value
     } else if (arg.startsWith('--api-key=')) {
       apiKey = arg.split('=', 2)[1];
-      console.warn('WARNING: Providing API key via command line is not recommended for security reasons.');
-      console.warn('Consider setting the INDEXCP_API_KEY environment variable instead.');
+      logger.warn('WARNING: Providing API key via command line is not recommended for security reasons.');
+      logger.warn('Consider setting the INDEXCP_API_KEY environment variable instead.');
     } else if (!serverUrl && (arg.startsWith('http://') || arg.startsWith('https://'))) {
       // Also support old format: indexcp upload <server-url> [files]
       serverUrl = arg;
@@ -223,9 +226,9 @@ async function handleUpload(args) {
   }
   
   if (!serverUrl) {
-    console.error('Error: Server URL is required');
-    console.log('Usage: indexcp upload --server <server-url> [--api-key <key>] [file1] [file2] ...');
-    console.log('   or: indexcp upload <server-url> [--api-key <key>] [file1] [file2] ...');
+    logger.error('Error: Server URL is required');
+    logger.info('Usage: indexcp upload --server <server-url> [--api-key <key>] [file1] [file2] ...');
+    logger.info('   or: indexcp upload <server-url> [--api-key <key>] [file1] [file2] ...');
     process.exit(1);
   }
 
@@ -234,20 +237,20 @@ async function handleUpload(args) {
     
     // Add any files specified on command line
     if (filesToAdd.length > 0) {
-      console.log(`Adding ${filesToAdd.length} file(s) to buffer...`);
+      logger.info(`Adding ${filesToAdd.length} file(s) to buffer...`);
       for (const filePath of filesToAdd) {
         if (!fs.existsSync(filePath)) {
-          console.error(`Error: File not found: ${filePath}`);
+          logger.error(`Error: File not found: ${filePath}`);
           process.exit(1);
         }
         await client.addFile(filePath);
-        console.log(`  Added: ${filePath}`);
+        logger.info(`  Added: ${filePath}`);
       }
     }
     
     const uploadResults = await client.uploadBufferedFiles(serverUrl);
     
-    console.log('All buffered files uploaded successfully');
+    logger.info('All buffered files uploaded successfully');
     
     // Display server filename mappings if any differ from client names
     if (uploadResults) {
@@ -256,14 +259,14 @@ async function handleUpload(args) {
       );
       
       if (differentFilenames.length > 0) {
-        console.log('\nServer-determined filenames:');
+        logger.info('\nServer-determined filenames:');
         differentFilenames.forEach(([clientName, serverName]) => {
-          console.log(`  ${require('path').basename(clientName)} -> ${serverName}`);
+          logger.info(`  ${require('path').basename(clientName)} -> ${serverName}`);
         });
       }
     }
   } catch (error) {
-    console.error('Error uploading files:', error.message);
+    logger.error('Error uploading files:', error.message);
     process.exit(1);
   }
 }
@@ -279,24 +282,24 @@ async function handleServer(args) {
     const arg = args[i];
     if (arg === '--api-key' && i + 1 < args.length) {
       apiKey = args[i + 1];
-      console.warn('WARNING: Providing API key via command line is not recommended for security reasons.');
-      console.warn('Consider setting the INDEXCP_API_KEY environment variable instead.');
+      logger.warn('WARNING: Providing API key via command line is not recommended for security reasons.');
+      logger.warn('Consider setting the INDEXCP_API_KEY environment variable instead.');
       i++; // Skip the next argument since it's the API key value
     } else if (arg.startsWith('--api-key=')) {
       apiKey = arg.split('=', 2)[1];
-      console.warn('WARNING: Providing API key via command line is not recommended for security reasons.');
-      console.warn('Consider setting the INDEXCP_API_KEY environment variable instead.');
+      logger.warn('WARNING: Providing API key via command line is not recommended for security reasons.');
+      logger.warn('Consider setting the INDEXCP_API_KEY environment variable instead.');
     } else if (arg === '--path-mode' && i + 1 < args.length) {
       pathMode = args[i + 1];
       if (!['sanitize', 'allow-paths', 'ignore'].includes(pathMode)) {
-        console.error('ERROR: --path-mode must be one of: sanitize, allow-paths, ignore');
+        logger.error('ERROR: --path-mode must be one of: sanitize, allow-paths, ignore');
         process.exit(1);
       }
       i++; // Skip the next argument since it's the path mode value
     } else if (arg.startsWith('--path-mode=')) {
       pathMode = arg.split('=', 2)[1];
       if (!['sanitize', 'allow-paths', 'ignore'].includes(pathMode)) {
-        console.error('ERROR: --path-mode must be one of: sanitize, allow-paths, ignore');
+        logger.error('ERROR: --path-mode must be one of: sanitize, allow-paths, ignore');
         process.exit(1);
       }
     } else if (!isNaN(parseInt(arg))) {
@@ -309,28 +312,28 @@ async function handleServer(args) {
   // Check environment variable for API key
   if (!apiKey && process.env.INDEXCP_API_KEY) {
     apiKey = process.env.INDEXCP_API_KEY;
-    console.log('Using API key from INDEXCP_API_KEY environment variable');
+    logger.info('Using API key from INDEXCP_API_KEY environment variable');
   }
   
   try {
     const server = new IndexCPServer({ port, outputDir, apiKey, pathMode });
-    console.log(`Path handling mode: ${pathMode}`);
+    logger.info(`Path handling mode: ${pathMode}`);
     server.listen(port);
     
     // Handle graceful shutdown
     process.on('SIGINT', () => {
-      console.log('\nShutting down server...');
+      logger.info('\nShutting down server...');
       server.close();
       process.exit(0);
     });
   } catch (error) {
-    console.error('Error starting server:', error.message);
+    logger.error('Error starting server:', error.message);
     process.exit(1);
   }
 }
 
 function showHelp() {
-  console.log(`
+  logger.info(`
 indexedcp - Secure, resumable file transfer with IndexedDB buffering
 
 Usage:
@@ -398,13 +401,13 @@ Examples:
 
 // Handle uncaught errors
 process.on('unhandledRejection', (error) => {
-  console.error('Unhandled error:', error.message);
+  logger.error('Unhandled error:', error.message);
   process.exit(1);
 });
 
 if (require.main === module) {
   main().catch((error) => {
-    console.error('CLI error:', error.message);
+    logger.error('CLI error:', error.message);
     process.exit(1);
   });
 }
