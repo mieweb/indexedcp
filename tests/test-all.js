@@ -49,7 +49,8 @@ async function runAllTests() {
     { script: './test-all-examples.js', name: 'Functional Tests' },
     { script: './security-test.js', name: 'Security Tests' },
     { script: './test-restart-persistence.js', name: 'Restart Persistence Tests' },
-    { script: './test-encryption.js', name: 'Encryption Tests' }
+    { script: './test-encryption.js', name: 'Encryption Tests' },
+    { script: './test-cli-ls.js', name: 'CLI ls Command Tests' }
   ];
 
   const results = [];
