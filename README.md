@@ -68,6 +68,10 @@ server.start();
 ```bash
 # Set API key
 export INDEXCP_API_KEY=your-key
+
+# Set log level (optional) - trace, debug, info, warn, error, fatal
+export INDEXCP_LOG_LEVEL=info
+
 # Start server
 indexcp server --port 3000 --apiKey your-key
 # Upload file
@@ -76,6 +80,41 @@ indexcp file_to_upload http://localhost:3000
 ## explicit upload command
 indexcp upload --server http://localhost:3000 [file1 file2 ...]
 ```
+
+### Logging Configuration
+
+Both the client and server support configurable log levels using the `console-log-level` package. You can control verbosity through environment variables or constructor options:
+
+**Environment Variable:**
+```bash
+export INDEXCP_LOG_LEVEL=debug  # trace, debug, info, warn, error, fatal
+```
+
+**Client Configuration:**
+```javascript
+const client = new IndexCPClient({
+  serverUrl: 'http://localhost:3000',
+  apiKey: 'your-key',
+  logLevel: 'debug'  // trace, debug, info, warn, error, fatal
+});
+```
+
+**Server Configuration:**
+```javascript
+const server = new IndexCPServer({
+  port: 3000,
+  apiKey: 'your-key',
+  logLevel: 'info'  // trace, debug, info, warn, error, fatal
+});
+```
+
+**Log Levels:**
+- `trace`: Most verbose - all debug information
+- `debug`: Detailed information for debugging
+- `info`: General informational messages (default)
+- `warn`: Warning messages
+- `error`: Error messages
+- `fatal`: Critical errors only
 
 ## Documentation of API
 

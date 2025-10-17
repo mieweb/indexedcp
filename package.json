@@ -30,6 +30,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "console-log-level": "^1.4.1",
     "fake-indexeddb": "^6.0.1",
     "idb": "^7.1.1",
     "node-fetch": "^2.7.0"
