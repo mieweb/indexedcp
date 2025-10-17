@@ -138,12 +138,6 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
-# Test files (but allow files in tests/ directory)
-*test*.txt
-!tests/
-test-*.js
-*-test-*
-
 # Keystore files (contain private keys - never commit!)
 server-keys/*.json
 server-keys/*.key
