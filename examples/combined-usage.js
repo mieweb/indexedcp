@@ -3,14 +3,14 @@
 // This demonstrates the original way of importing everything
 
 // Import both client and server (traditional way - still works)
-const { client: IndexCPClient, server } = require('../index');
-const { IndexCPServer } = server;
+const { client: IndexedCPClient, server } = require('../index');
+const { IndexedCPServer } = server;
 
 async function combinedExample() {
   console.log('Combined usage example...');
   
   // Start server
-  const serverInstance = new IndexCPServer({
+  const serverInstance = new IndexedCPServer({
     port: 3000,
     outputDir: './uploads'
   });
@@ -19,7 +19,7 @@ async function combinedExample() {
     console.log('Server started on port 3000');
     
     // Use client to upload to the server
-    const clientInstance = new IndexCPClient();
+    const clientInstance = new IndexedCPClient();
     
     try {
       // In a real scenario, you might wait a bit or have the file ready

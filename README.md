@@ -33,8 +33,8 @@ npm install -g indexedcp
 Minimal setup for a client to queue and send a stream encrypted.  Packets are kept in IndexedDB until confirmed by the server. The example starts a startUploadBackground() task that works to upload any packets in the background. Then it opens a MediaStream from the microphone, but any ReadableStream can be used.
 
 ```javascript
-const IndexCPClient = require('indexedcp/lib/client');
-const client = new IndexCPClient({
+const IndexedCPClient = require('indexedcp/lib/client');
+const client = new IndexedCPClient({
   serverUrl: 'http://localhost:3000',
   apiKey: 'your-key'
 });
@@ -67,10 +67,10 @@ server.start();
 
 ```bash
 # Set API key
-export INDEXCP_API_KEY=your-key
+export INDEXEDCP_API_KEY=your-key
 
 # Set log level (optional) - trace, debug, info, warn, error, fatal
-export INDEXCP_LOG_LEVEL=info
+export INDEXEDCP_LOG_LEVEL=info
 
 # Start server
 indexcp server --port 3000 --apiKey your-key
@@ -87,12 +87,12 @@ Both the client and server support configurable log levels using the `console-lo
 
 **Environment Variable:**
 ```bash
-export INDEXCP_LOG_LEVEL=debug  # trace, debug, info, warn, error, fatal
+export INDEXEDCP_LOG_LEVEL=debug  # trace, debug, info, warn, error, fatal
 ```
 
 **Client Configuration:**
 ```javascript
-const client = new IndexCPClient({
+const client = new IndexedCPClient({
   serverUrl: 'http://localhost:3000',
   apiKey: 'your-key',
   logLevel: 'debug'  // trace, debug, info, warn, error, fatal
@@ -101,7 +101,7 @@ const client = new IndexCPClient({
 
 **Server Configuration:**
 ```javascript
-const server = new IndexCPServer({
+const server = new IndexedCPServer({
   port: 3000,
   apiKey: 'your-key',
   logLevel: 'info'  // trace, debug, info, warn, error, fatal

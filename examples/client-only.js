@@ -3,12 +3,12 @@
 // This is ideal for browser environments or when you only need upload capabilities
 
 // Import only the client (no server dependencies loaded)
-const IndexCPClient = require('../client');
+const IndexedCPClient = require('../client');
 
 async function clientOnlyExample() {
   console.log('Client-only example - uploading files...');
   
-  const client = new IndexCPClient();
+  const client = new IndexedCPClient();
   
   // Add a file to the buffer
   await client.addFile('./myfile.txt');

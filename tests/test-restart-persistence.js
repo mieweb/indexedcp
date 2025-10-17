@@ -8,10 +8,10 @@
  * 
  * Test flow:
  * 1. Add files to buffer in one p    const verifyScript = `
-      const IndexCPClient = require('${path.join(__dirname, '..', 'lib', 'client.js')}');
+      const IndexedCPClient = require('${path.join(__dirname, '..', 'lib', 'client.js')}');
       
       async function verifyCleared() {
-        const client = new IndexCPClient();
+        const client = new IndexedCPClient();
         const db = await client.initDB();
         const tx = db.transaction('chunks', 'readonly');
         const store = tx.objectStore('chunks');
@@ -81,7 +81,7 @@ function createTestFile(filename, content) {
 function runNodeScript(code) {
   return new Promise((resolve, reject) => {
     const child = spawn('node', ['-e', code], {
-      env: { ...process.env, INDEXCP_CLI_MODE: 'true' },
+      env: { ...process.env, INDEXEDCP_CLI_MODE: 'true' },
       cwd: __dirname
     });
     
@@ -131,10 +131,10 @@ async function testRestartPersistence() {
     log('============================================================', 'yellow');
     
     const addScript = `
-      const IndexCPClient = require('${path.join(__dirname, '..', 'lib', 'client.js')}');
+      const IndexedCPClient = require('${path.join(__dirname, '..', 'lib', 'client.js')}');
       
       async function addFiles() {
-        const client = new IndexCPClient();
+        const client = new IndexedCPClient();
         await client.addFile('${file1}');
         console.log('Added file 1');
         await client.addFile('${file2}');
@@ -173,10 +173,10 @@ async function testRestartPersistence() {
     log('============================================================', 'yellow');
     
     const readScript = `
-      const IndexCPClient = require('${path.join(__dirname, '..', 'lib', 'client.js')}');
+      const IndexedCPClient = require('${path.join(__dirname, '..', 'lib', 'client.js')}');
       
       async function readBuffer() {
-        const client = new IndexCPClient();
+        const client = new IndexedCPClient();
         // Initialize DB by calling initDB
         const db = await client.initDB();
         const tx = db.transaction('chunks', 'readonly');
@@ -211,11 +211,11 @@ async function testRestartPersistence() {
     log('============================================================', 'yellow');
     
     // Start a test server
-    const { IndexCPServer } = require('../lib/server');
+    const { IndexedCPServer } = require('../lib/server');
     const uploadDir = path.join(TEST_DIR, 'uploads');
     fs.mkdirSync(uploadDir, { recursive: true });
     
-    const server = new IndexCPServer({ 
+    const server = new IndexedCPServer({ 
       port: 3456, 
       outputDir: uploadDir,
       apiKey: 'test-restart-key'
@@ -229,10 +229,10 @@ async function testRestartPersistence() {
     log('✓ Test server started on port 3456', 'green');
     
     const uploadScript = `
-      const IndexCPClient = require('${path.join(__dirname, '..', 'lib', 'client.js')}');
+      const IndexedCPClient = require('${path.join(__dirname, '..', 'lib', 'client.js')}');
       
       async function uploadBuffered() {
-        const client = new IndexCPClient({ apiKey: 'test-restart-key' });
+        const client = new IndexedCPClient({ apiKey: 'test-restart-key' });
         const results = await client.uploadBufferedFiles('http://localhost:3456/upload');
         console.log('Upload results:', JSON.stringify(results));
       }
@@ -269,10 +269,10 @@ async function testRestartPersistence() {
     log('============================================================', 'yellow');
     
     const verifyScript = `
-      const IndexCPClient = require('${path.join(__dirname, '..', 'lib', 'client.js')}');
+      const IndexedCPClient = require('${path.join(__dirname, '..', 'lib', 'client.js')}');
       
       async function verifyCleared() {
-        const client = new IndexCPClient();
+        const client = new IndexedCPClient();
         const db = await client.db;
         const tx = db.transaction('chunks', 'readonly');
         const store = tx.objectStore('chunks');

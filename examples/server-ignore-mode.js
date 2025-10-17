@@ -1,10 +1,10 @@
 // Example: Using ignore mode (default) with original filenames preserved
 
-const { IndexCPServer } = require('../lib/server');
+const { IndexedCPServer } = require('../lib/server');
 
 // Create server with 'ignore' mode (the default)
 // This generates unique filenames while preserving original names for traceability
-const server = new IndexCPServer({
+const server = new IndexedCPServer({
   port: 3000,
   outputDir: './uploads',
   // pathMode: 'ignore' is the default, so we don't need to specify it

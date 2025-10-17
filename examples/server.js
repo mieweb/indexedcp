@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 const OUTPUT_FILE = path.join(__dirname, 'uploaded_file.txt');
-const API_KEY = process.env.INDEXCP_API_KEY || 'your-secure-api-key';
+const API_KEY = process.env.INDEXEDCP_API_KEY || 'your-secure-api-key';
 
 const server = http.createServer((req, res) => {
   if (req.method === 'POST' && req.url === '/upload') {

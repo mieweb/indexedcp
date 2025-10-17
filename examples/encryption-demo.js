@@ -11,8 +11,8 @@
  * 6. Demonstrate key rotation
  */
 
-const { IndexCPServer } = require('../lib/server');
-const IndexCPClient = require('../lib/client');
+const { IndexedCPServer } = require('../lib/server');
+const IndexedCPClient = require('../lib/client');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -69,7 +69,7 @@ async function demo() {
   log('Step 1: Starting Encrypted Server', 'yellow');
   log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n', 'yellow');
 
-  const server = new IndexCPServer({
+  const server = new IndexedCPServer({
     outputDir: uploadDir,
     port: 3002,
     apiKey: 'demo-api-key-12345',
@@ -92,7 +92,7 @@ async function demo() {
   log('Step 2: Client Fetches Public Key (AC0)', 'yellow');
   log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n', 'yellow');
 
-  const client = new IndexCPClient({
+  const client = new IndexedCPClient({
     dbName: 'demo-encrypted',
     apiKey: 'demo-api-key-12345',
     serverUrl: 'http://localhost:3002',
@@ -135,7 +135,7 @@ async function demo() {
   log('Step 4: Demonstrate Offline Capability (AC2)', 'yellow');
   log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n', 'yellow');
 
-  const offlineClient = new IndexCPClient({
+  const offlineClient = new IndexedCPClient({
     dbName: 'demo-encrypted',
     apiKey: 'demo-api-key-12345',
     encryption: true  // Enable encryption support

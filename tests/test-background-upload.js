@@ -1,5 +1,5 @@
-const IndexCPClient = require('../lib/client');
-const { IndexCPServer } = require('../lib/server');
+const IndexedCPClient = require('../lib/client');
+const { IndexedCPServer } = require('../lib/server');
 const fs = require('fs');
 const path = require('path');
 
@@ -31,7 +31,7 @@ async function runTest() {
   try {
     // Start server
     console.log('🔧 Starting test server...');
-    server = new IndexCPServer({
+    server = new IndexedCPServer({
       outputDir: OUTPUT_DIR,
       port: TEST_PORT,
       apiKey: TEST_API_KEY,
@@ -45,7 +45,7 @@ async function runTest() {
     console.log('Test 1: Background Upload with Success');
     console.log('============================================================');
     
-    const client1 = new IndexCPClient({
+    const client1 = new IndexedCPClient({
       apiKey: TEST_API_KEY,
       maxRetries: 5,
       initialRetryDelay: 500,  // Faster for testing
@@ -117,7 +117,7 @@ async function runTest() {
     const testFile3 = path.join(TEST_DIR, 'test-file-3.txt');
     fs.writeFileSync(testFile3, 'Test content for retry test\n'.repeat(50));
     
-    const client2 = new IndexCPClient({
+    const client2 = new IndexedCPClient({
       apiKey: TEST_API_KEY,
       maxRetries: 3,
       initialRetryDelay: 500,
@@ -161,7 +161,7 @@ async function runTest() {
     
     // Restart server
     console.log('\n✓ Restarting server...');
-    server = new IndexCPServer({
+    server = new IndexedCPServer({
       outputDir: OUTPUT_DIR,
       port: TEST_PORT,
       apiKey: TEST_API_KEY,

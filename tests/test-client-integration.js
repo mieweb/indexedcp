@@ -5,7 +5,7 @@
  * Test unified client with encryption
  */
 
-const IndexCPClient = require('../lib/client');
+const IndexedCPClient = require('../lib/client');
 const fs = require('fs');
 const path = require('path');
 
@@ -24,7 +24,7 @@ async function testClientIntegration() {
   try {
     // Test 1: Client without encryption
     console.log('Test 1: Client without encryption');
-    const plainClient = new IndexCPClient({
+    const plainClient = new IndexedCPClient({
       dbName: 'test-plain-client',
       apiKey: 'test-key'
     });
@@ -36,7 +36,7 @@ async function testClientIntegration() {
     
     // Test 2: Client with encryption
     console.log('Test 2: Client with encryption enabled');
-    const encryptedClient = new IndexCPClient({
+    const encryptedClient = new IndexedCPClient({
       dbName: 'test-encrypted-client',
       apiKey: 'test-key',
       serverUrl: 'http://localhost:3000',

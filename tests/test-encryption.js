@@ -8,8 +8,8 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const assert = require('assert');
-const IndexCPClient = require('../lib/client');
-const { IndexCPServer } = require('../lib/server');
+const IndexedCPClient = require('../lib/client');
+const { IndexedCPServer } = require('../lib/server');
 const cryptoUtils = require('../lib/crypto-utils');
 
 const colors = {
@@ -83,7 +83,7 @@ class EncryptionTestSuite {
   }
 
   async startServer() {
-    this.server = new IndexCPServer({
+    this.server = new IndexedCPServer({
       outputDir: this.serverOutputDir,
       port: this.port,
       apiKey: this.apiKey,
@@ -118,7 +118,7 @@ class EncryptionTestSuite {
   // ===== AC0: Fetch public key from server =====
   async testAC0_PublicKeyFetch() {
     await this.test('AC0: Fetch public key from server before storing data', async () => {
-      const client = new IndexCPClient({
+      const client = new IndexedCPClient({
         dbName: 'test-ac0',
         apiKey: this.apiKey,
         serverUrl: `http://localhost:${this.port}`,
@@ -145,7 +145,7 @@ class EncryptionTestSuite {
   // ===== AC1: No plaintext in IndexedDB =====
   async testAC1_NoPlaintextInDB() {
     await this.test('AC1: IndexedDB contains only encrypted packets and wrapped keys', async () => {
-      const client = new IndexCPClient({
+      const client = new IndexedCPClient({
         dbName: 'test-ac1',
         apiKey: this.apiKey,
         serverUrl: `http://localhost:${this.port}`,
@@ -204,7 +204,7 @@ class EncryptionTestSuite {
   // ===== AC2: Offline operation after key fetch =====
   async testAC2_OfflineOperation() {
     await this.test('AC2: Client functions offline after initial key fetch', async () => {
-      const client = new IndexCPClient({
+      const client = new IndexedCPClient({
         dbName: 'test-ac2',
         apiKey: this.apiKey,
         serverUrl: `http://localhost:${this.port}`,
@@ -216,7 +216,7 @@ class EncryptionTestSuite {
       const cachedKid = await client.cachedKeyId;
 
       // Simulate offline: Create new client without server URL
-      const offlineClient = new IndexCPClient({
+      const offlineClient = new IndexedCPClient({
         dbName: 'test-ac2',
         apiKey: this.apiKey,
         encryption: true
@@ -247,7 +247,7 @@ class EncryptionTestSuite {
   // ===== AC3: Server successfully decrypts =====
   async testAC3_ServerDecryption() {
     await this.test('AC3: Server successfully decrypts uploaded packets', async () => {
-      const client = new IndexCPClient({
+      const client = new IndexedCPClient({
         dbName: 'test-ac3',
         apiKey: this.apiKey,
         serverUrl: `http://localhost:${this.port}`,
@@ -279,7 +279,7 @@ class EncryptionTestSuite {
   // ===== AC4: Key rotation doesn't invalidate queued data =====
   async testAC4_KeyRotation() {
     await this.test('AC4: Key rotation does not invalidate queued data', async () => {
-      const client = new IndexCPClient({
+      const client = new IndexedCPClient({
         dbName: 'test-ac4',
         apiKey: this.apiKey,
         serverUrl: `http://localhost:${this.port}`,
@@ -327,7 +327,7 @@ class EncryptionTestSuite {
       const largeContent = 'X'.repeat(5 * 1024 * 1024); // 5MB
       fs.writeFileSync(largeFile, largeContent);
 
-      const client = new IndexCPClient({
+      const client = new IndexedCPClient({
         dbName: 'test-ac5',
         apiKey: this.apiKey,
         serverUrl: `http://localhost:${this.port}`,
@@ -364,7 +364,7 @@ class EncryptionTestSuite {
   // ===== Additional test: Session key in memory only =====
   async testSessionKeyMemory() {
     await this.test('Session keys remain in memory only during capture', async () => {
-      const client = new IndexCPClient({
+      const client = new IndexedCPClient({
         dbName: 'test-memory',
         apiKey: this.apiKey,
         serverUrl: `http://localhost:${this.port}`,
@@ -396,7 +396,7 @@ class EncryptionTestSuite {
   // ===== Additional test: IV uniqueness =====
   async testIVUniqueness() {
     await this.test('IVs are unique per packet', async () => {
-      const client = new IndexCPClient({
+      const client = new IndexedCPClient({
         dbName: 'test-iv',
         apiKey: this.apiKey,
         serverUrl: `http://localhost:${this.port}`,
@@ -424,7 +424,7 @@ class EncryptionTestSuite {
   // ===== Additional test: Encryption status API =====
   async testEncryptionStatus() {
     await this.test('Encryption status and stats', async () => {
-      const client = new IndexCPClient({
+      const client = new IndexedCPClient({
         dbName: 'test-status',
         apiKey: this.apiKey,
         serverUrl: `http://localhost:${this.port}`,

@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
 // Quick test to verify the default path mode is 'ignore'
-const { IndexCPServer } = require('../lib/server');
+const { IndexedCPServer } = require('../lib/server');
 
 console.log('Testing default path mode...\n');
 
 // Create server without specifying pathMode
-const server = new IndexCPServer({
+const server = new IndexedCPServer({
   port: 3999,
   outputDir: './test-default-mode'
 });

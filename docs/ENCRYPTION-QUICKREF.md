@@ -1,13 +1,13 @@
 # Encryption Quick Reference
 
-> **📢 API Update (2024-12-08)**: Encryption has been integrated into the main `IndexCPServer` and `IndexCPClient` classes with an `encryption: true` flag. The separate `EncryptedServer` and `EncryptedClient` classes are deprecated. See [MIGRATION-GUIDE.md](./MIGRATION-GUIDE.md) for migration instructions.
+> **📢 API Update (2024-12-08)**: Encryption has been integrated into the main `IndexedCPServer` and `IndexedCPClient` classes with an `encryption: true` flag. The separate `EncryptedServer` and `EncryptedClient` classes are deprecated. See [MIGRATION-GUIDE.md](./MIGRATION-GUIDE.md) for migration instructions.
 
 ## 🚀 Quick Start (5 minutes)
 
 ### Server Setup
 ```javascript
-const { IndexCPServer } = require('indexedcp/lib/server');
-const server = new IndexCPServer({ 
+const { IndexedCPServer } = require('indexedcp/lib/server');
+const server = new IndexedCPServer({ 
   port: 3000,
   encryption: true,  // Enable encryption support
   keystoreType: 'filesystem'  // Or 'mongodb', 'memory'
@@ -23,8 +23,8 @@ await server.listen(3000);
 const { MongoClient } = require('mongodb');
 const mongoClient = await MongoClient.connect('mongodb://localhost:27017');
 
-const { IndexCPServer } = require('indexedcp/lib/server');
-const server = new IndexCPServer({ 
+const { IndexedCPServer } = require('indexedcp/lib/server');
+const server = new IndexedCPServer({ 
   port: 3000,
   encryption: true,  // Enable encryption support
   keystoreType: 'mongodb',
@@ -39,8 +39,8 @@ await server.listen(3000);
 
 ### Client Usage
 ```javascript
-const IndexCPClient = require('indexedcp/lib/client');
-const client = new IndexCPClient({
+const IndexedCPClient = require('indexedcp/lib/client');
+const client = new IndexedCPClient({
   serverUrl: 'http://localhost:3000',
   apiKey: 'your-api-key',
   encryption: true  // Enable encryption support
@@ -278,8 +278,8 @@ Response:
 
 ```bash
 # Client
-export INDEXCP_API_KEY=your-api-key
-export INDEXCP_ENCRYPTION=true  # Enable encryption (default)
+export INDEXEDCP_API_KEY=your-api-key
+export INDEXEDCP_ENCRYPTION=true  # Enable encryption (default)
 
 # Server
 export PORT=3000

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // Test full path preservation in ignore mode
-const { IndexCPServer } = require('../lib/server');
+const { IndexedCPServer } = require('../lib/server');
 const http = require('http');
 
 const PORT = 3998;
@@ -91,7 +91,7 @@ async function uploadFile(filename) {
 }
 
 async function runTests() {
-  const server = new IndexCPServer({
+  const server = new IndexedCPServer({
     port: PORT,
     outputDir: './test-path-preservation',
     apiKey: API_KEY
