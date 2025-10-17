@@ -2,7 +2,7 @@
 
 ## Overview
 
-Encryption support has been **integrated** into the main `IndexCPServer` and `IndexCPClient` classes. The separate `EncryptedServer` and `EncryptedClient` classes have been deprecated and archived.
+Encryption support has been **integrated** into the main `IndexedCPServer` and `IndexedCPClient` classes. The separate `EncryptedServer` and `EncryptedClient` classes have been deprecated and archived.
 
 ## Why This Change?
 
@@ -30,9 +30,9 @@ await server.listen(3000);
 
 **After** (using unified class):
 ```javascript
-const { IndexCPServer } = require('indexedcp/lib/server');
+const { IndexedCPServer } = require('indexedcp/lib/server');
 
-const server = new IndexCPServer({
+const server = new IndexedCPServer({
   port: 3000,
   outputDir: './uploads',
   encryption: true,              // ← Add this flag
@@ -60,9 +60,9 @@ await client.uploadBufferedFiles();
 
 **After** (using unified class):
 ```javascript
-const IndexCPClient = require('indexedcp/lib/client');
+const IndexedCPClient = require('indexedcp/lib/client');
 
-const client = new IndexCPClient({
+const client = new IndexedCPClient({
   serverUrl: 'http://localhost:3000',
   apiKey: 'your-key',
   encryption: true               // ← Add this flag
@@ -112,14 +112,14 @@ When `encryption: true`:
 
 ### For Server Code
 - [ ] Replace `require('./lib/encrypted-server')` with `require('./lib/server')`
-- [ ] Change `new EncryptedServer(...)` to `new IndexCPServer(...)`
+- [ ] Change `new EncryptedServer(...)` to `new IndexedCPServer(...)`
 - [ ] Add `encryption: true` to constructor options
 - [ ] Test key rotation and decryption
 - [ ] Verify keystore persistence
 
 ### For Client Code
 - [ ] Replace `require('./lib/encrypted-client')` with `require('./lib/client')`
-- [ ] Change `new EncryptedClient(...)` to `new IndexCPClient(...)`
+- [ ] Change `new EncryptedClient(...)` to `new IndexedCPClient(...)`
 - [ ] Add `encryption: true` to constructor options
 - [ ] Test offline encryption (AC2)
 - [ ] Test upload with encrypted packets
@@ -139,7 +139,7 @@ When `encryption: true`:
 ### 1. **Easier to Understand**
 ```javascript
 // Clear intent: encryption is a feature, not a separate thing
-const server = new IndexCPServer({ encryption: true });
+const server = new IndexedCPServer({ encryption: true });
 ```
 
 ### 2. **No Duplication**
@@ -150,10 +150,10 @@ const server = new IndexCPServer({ encryption: true });
 ### 3. **Gradual Adoption**
 ```javascript
 // Start without encryption
-const client = new IndexCPClient({ apiKey: 'key' });
+const client = new IndexedCPClient({ apiKey: 'key' });
 
 // Enable later without changing class
-const client = new IndexCPClient({ 
+const client = new IndexedCPClient({ 
   apiKey: 'key',
   encryption: true  // Just add this
 });
@@ -162,11 +162,11 @@ const client = new IndexCPClient({
 ### 4. **Bundle Size**
 ```javascript
 // Without encryption: crypto modules not loaded
-const client = new IndexCPClient({ /* no encryption */ });
+const client = new IndexedCPClient({ /* no encryption */ });
 // Smaller bundle size!
 
 // With encryption: crypto modules loaded only when needed
-const client = new IndexCPClient({ encryption: true });
+const client = new IndexedCPClient({ encryption: true });
 ```
 
 ## Rollback Plan

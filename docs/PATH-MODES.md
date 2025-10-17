@@ -28,7 +28,7 @@ IndexedCP supports three path handling modes to balance security and flexibility
 
 **Example:**
 ```javascript
-const server = new IndexCPServer({
+const server = new IndexedCPServer({
   port: 3000,
   outputDir: './uploads',
   pathMode: 'sanitize'  // default
@@ -58,7 +58,7 @@ indexedcp server 3000 ./uploads --path-mode sanitize
 
 **Example:**
 ```javascript
-const server = new IndexCPServer({
+const server = new IndexedCPServer({
   port: 3000,
   outputDir: './uploads',
   pathMode: 'allow-paths'
@@ -112,24 +112,24 @@ Modes `sanitize` and `allow-paths` additionally block:
 ### Programmatic
 
 ```javascript
-const { IndexCPServer } = require('indexedcp/server');
+const { IndexedCPServer } = require('indexedcp/server');
 
 // Default: Unique filenames with traceability (ignore mode)
-const server1 = new IndexCPServer({
+const server1 = new IndexedCPServer({
   port: 3000,
   outputDir: './uploads'
   // pathMode defaults to 'ignore'
 });
 
 // Simple filenames (sanitize mode)
-const server2 = new IndexCPServer({
+const server2 = new IndexedCPServer({
   port: 3001,
   outputDir: './simple-uploads',
   pathMode: 'sanitize'
 });
 
 // Allow subdirectories (allow-paths mode)
-const server3 = new IndexCPServer({
+const server3 = new IndexedCPServer({
   port: 3002,
   outputDir: './organized-uploads',
   pathMode: 'allow-paths'
@@ -140,7 +140,7 @@ const server3 = new IndexCPServer({
 
 ```bash
 # Default (ignore mode - generates unique filenames)
-export INDEXCP_API_KEY=your-secure-key
+export INDEXEDCP_API_KEY=your-secure-key
 indexedcp server 3000 ./uploads
 
 # Simple filenames (sanitize mode)
@@ -202,7 +202,7 @@ This validates:
 ### If you want the old behavior:
 ```javascript
 // Explicitly set to sanitize for backward compatibility
-const server = new IndexCPServer({ 
+const server = new IndexedCPServer({ 
   pathMode: 'sanitize',
   ...
 });
@@ -218,7 +218,7 @@ If you were relying on subdirectories, update to:
 
 ```javascript
 // For subdirectory support
-const server = new IndexCPServer({ 
+const server = new IndexedCPServer({ 
   pathMode: 'allow-paths',
   ...
 });

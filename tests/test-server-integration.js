@@ -5,14 +5,14 @@
  * Test unified server with encryption enabled
  */
 
-const { IndexCPServer } = require('../lib/server');
+const { IndexedCPServer } = require('../lib/server');
 
 async function testEncryptionIntegration() {
   console.log('🧪 Testing unified server with encryption...\n');
   
   // Test 1: Server without encryption (backward compatible)
   console.log('Test 1: Server without encryption');
-  const plainServer = new IndexCPServer({
+  const plainServer = new IndexedCPServer({
     port: 3001,
     outputDir: './test-output-plain'
   });
@@ -26,7 +26,7 @@ async function testEncryptionIntegration() {
   
   // Test 2: Server with encryption enabled
   console.log('Test 2: Server with encryption enabled');
-  const encryptedServer = new IndexCPServer({
+  const encryptedServer = new IndexedCPServer({
     port: 3002,
     outputDir: './test-output-encrypted',
     encryption: true,

@@ -4,8 +4,8 @@
 
 const path = require('path');
 const fs = require('fs');
-const { IndexCPServer } = require('../server');
-const IndexCPClient = require('../client');
+const { IndexedCPServer } = require('../server');
+const IndexedCPClient = require('../client');
 
 // Test configuration
 const TEST_PORT = 3000;
@@ -77,7 +77,7 @@ function verifyUpload(filename, originalContent) {
 async function testBasicClientUpload(server) {
   logTest('Basic Client Upload');
   
-  const client = new IndexCPClient({
+  const client = new IndexedCPClient({
     apiKey: API_KEY
   });
   
@@ -103,7 +103,7 @@ async function testFilenameMapping(server) {
   fs.writeFileSync(testFile, 'Test content for filename mapping\n');
   
   try {
-    const client = new IndexCPClient({
+    const client = new IndexedCPClient({
       apiKey: API_KEY
     });
     
@@ -144,7 +144,7 @@ async function testMultipleFiles(server) {
       fs.writeFileSync(file.name, file.content);
     });
     
-    const client = new IndexCPClient({
+    const client = new IndexedCPClient({
       apiKey: API_KEY
     });
     
@@ -187,7 +187,7 @@ async function testLargeFileUpload(server) {
     const content = 'X'.repeat(chunkSize).repeat(chunks);
     fs.writeFileSync(largeFile, content);
     
-    const client = new IndexCPClient({
+    const client = new IndexedCPClient({
       apiKey: API_KEY,
       chunkSize: chunkSize
     });
@@ -215,10 +215,10 @@ async function testNoApiKey(server) {
   logTest('Error Handling - Missing API Key');
   
   // Temporarily remove env variable if it exists
-  const originalApiKey = process.env.INDEXCP_API_KEY;
-  delete process.env.INDEXCP_API_KEY;
+  const originalApiKey = process.env.INDEXEDCP_API_KEY;
+  delete process.env.INDEXEDCP_API_KEY;
   
-  const client = new IndexCPClient(); // No API key
+  const client = new IndexedCPClient(); // No API key
   
   try {
     await client.addFile(TEST_FILE);
@@ -234,7 +234,7 @@ async function testNoApiKey(server) {
   } finally {
     // Restore env variable
     if (originalApiKey) {
-      process.env.INDEXCP_API_KEY = originalApiKey;
+      process.env.INDEXEDCP_API_KEY = originalApiKey;
     }
   }
 }
@@ -243,7 +243,7 @@ async function testNoApiKey(server) {
 async function testWrongApiKey(server) {
   logTest('Error Handling - Wrong API Key');
   
-  const client = new IndexCPClient({
+  const client = new IndexedCPClient({
     apiKey: 'wrong-api-key'
   });
   
@@ -268,7 +268,7 @@ async function testResumeUpload(server) {
     fs.writeFileSync(testFile, content);
     
     // Create a fresh client instance to ensure clean buffer
-    const client = new IndexCPClient({
+    const client = new IndexedCPClient({
       apiKey: API_KEY
     });
     
@@ -321,7 +321,7 @@ async function runAllTests() {
     
     // Start server
     logInfo('Starting IndexCP server...');
-    server = new IndexCPServer({
+    server = new IndexedCPServer({
       port: TEST_PORT,
       outputDir: UPLOAD_DIR,
       apiKey: API_KEY,

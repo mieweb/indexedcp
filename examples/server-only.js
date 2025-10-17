@@ -3,13 +3,13 @@
 // This is ideal for server environments that only need to receive uploads
 
 // Import only the server (no client/IndexedDB dependencies loaded)
-const { IndexCPServer, createSimpleServer } = require('../server');
+const { IndexedCPServer, createSimpleServer } = require('../server');
 
 function serverOnlyExample() {
   console.log('Server-only example - receiving uploads...');
   
-  // Option 1: Use the IndexCPServer class
-  const server = new IndexCPServer({
+  // Option 1: Use the IndexedCPServer class
+  const server = new IndexedCPServer({
     port: 3000,
     outputDir: './uploads'
   });

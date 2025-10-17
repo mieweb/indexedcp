@@ -2,7 +2,7 @@
 // security-test.js
 // Test path traversal and other security vulnerabilities
 
-const { IndexCPServer } = require('../lib/server');
+const { IndexedCPServer } = require('../lib/server');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -83,7 +83,7 @@ async function runSecurityTests() {
 
   setup();
 
-  const server = new IndexCPServer({
+  const server = new IndexedCPServer({
     port: PORT,
     outputDir: TEST_DIR,
     apiKey: API_KEY,

@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 
 // Set CLI mode for filesystem storage
-process.env.INDEXCP_CLI_MODE = 'true';
+process.env.INDEXEDCP_CLI_MODE = 'true';
 
-const IndexCPClient = require('../lib/client');
-const { IndexCPServer } = require('../lib/server');
+const IndexedCPClient = require('../lib/client');
+const { IndexedCPServer } = require('../lib/server');
 const { createLogger } = require('../lib/logger');
 const path = require('path');
 const fs = require('fs');
 
-const logger = createLogger({ prefix: '[IndexCP-CLI]' });
+const logger = createLogger({ prefix: '[IndexedCP-CLI]' });
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -66,7 +66,7 @@ async function handleCpStyle(args) {
   }
 
   try {
-    const client = new IndexCPClient();
+    const client = new IndexedCPClient();
     logger.info(`Adding ${filePath} to buffer...`);
     await client.addFile(filePath);
     logger.info(`Uploading to ${serverUrl}...`);
@@ -102,7 +102,7 @@ async function handleAdd(args) {
   }
 
   try {
-    const client = new IndexCPClient();
+    const client = new IndexedCPClient();
     await client.addFile(filePath);
     logger.info(`File ${filePath} successfully added to buffer`);
   } catch (error) {
@@ -115,7 +115,7 @@ async function handleList(args) {
   const verbose = args.includes('-v') || args.includes('--verbose');
   
   try {
-    const client = new IndexCPClient();
+    const client = new IndexedCPClient();
     const db = await client.initDB();
     const chunks = await db.getAll(client.storeName);
     
@@ -210,12 +210,12 @@ async function handleUpload(args) {
     } else if (arg === '--api-key' && i + 1 < args.length) {
       apiKey = args[i + 1];
       logger.warn('WARNING: Providing API key via command line is not recommended for security reasons.');
-      logger.warn('Consider setting the INDEXCP_API_KEY environment variable instead.');
+      logger.warn('Consider setting the INDEXEDCP_API_KEY environment variable instead.');
       i++; // Skip the next argument since it's the API key value
     } else if (arg.startsWith('--api-key=')) {
       apiKey = arg.split('=', 2)[1];
       logger.warn('WARNING: Providing API key via command line is not recommended for security reasons.');
-      logger.warn('Consider setting the INDEXCP_API_KEY environment variable instead.');
+      logger.warn('Consider setting the INDEXEDCP_API_KEY environment variable instead.');
     } else if (!serverUrl && (arg.startsWith('http://') || arg.startsWith('https://'))) {
       // Also support old format: indexcp upload <server-url> [files]
       serverUrl = arg;
@@ -233,7 +233,7 @@ async function handleUpload(args) {
   }
 
   try {
-    const client = new IndexCPClient({ apiKey });
+    const client = new IndexedCPClient({ apiKey });
     
     // Add any files specified on command line
     if (filesToAdd.length > 0) {
@@ -283,12 +283,12 @@ async function handleServer(args) {
     if (arg === '--api-key' && i + 1 < args.length) {
       apiKey = args[i + 1];
       logger.warn('WARNING: Providing API key via command line is not recommended for security reasons.');
-      logger.warn('Consider setting the INDEXCP_API_KEY environment variable instead.');
+      logger.warn('Consider setting the INDEXEDCP_API_KEY environment variable instead.');
       i++; // Skip the next argument since it's the API key value
     } else if (arg.startsWith('--api-key=')) {
       apiKey = arg.split('=', 2)[1];
       logger.warn('WARNING: Providing API key via command line is not recommended for security reasons.');
-      logger.warn('Consider setting the INDEXCP_API_KEY environment variable instead.');
+      logger.warn('Consider setting the INDEXEDCP_API_KEY environment variable instead.');
     } else if (arg === '--path-mode' && i + 1 < args.length) {
       pathMode = args[i + 1];
       if (!['sanitize', 'allow-paths', 'ignore'].includes(pathMode)) {
@@ -310,13 +310,13 @@ async function handleServer(args) {
   }
   
   // Check environment variable for API key
-  if (!apiKey && process.env.INDEXCP_API_KEY) {
-    apiKey = process.env.INDEXCP_API_KEY;
-    logger.info('Using API key from INDEXCP_API_KEY environment variable');
+  if (!apiKey && process.env.INDEXEDCP_API_KEY) {
+    apiKey = process.env.INDEXEDCP_API_KEY;
+    logger.info('Using API key from INDEXEDCP_API_KEY environment variable');
   }
   
   try {
-    const server = new IndexCPServer({ port, outputDir, apiKey, pathMode });
+    const server = new IndexedCPServer({ port, outputDir, apiKey, pathMode });
     logger.info(`Path handling mode: ${pathMode}`);
     server.listen(port);
     
@@ -351,7 +351,7 @@ Usage:
 
 API Key Options:
   --api-key <key>     Specify API key (NOT recommended for security)
-  Environment var:    Set INDEXCP_API_KEY environment variable (recommended)
+  Environment var:    Set INDEXEDCP_API_KEY environment variable (recommended)
   Auto-prompt:        If no API key provided, you will be prompted
 
 Path Mode Options (Server):
@@ -391,7 +391,7 @@ Examples:
   indexedcp server 3000 ./uploads --path-mode allow-paths
   
   # Using environment variable (recommended):
-  export INDEXCP_API_KEY=your-api-key-here
+  export INDEXEDCP_API_KEY=your-api-key-here
   indexedcp myfile.txt http://localhost:3000/upload
   
   # Using command line (not recommended):

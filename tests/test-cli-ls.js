@@ -10,9 +10,9 @@ const fs = require('fs');
 const path = require('path');
 
 // Set CLI mode
-process.env.INDEXCP_CLI_MODE = 'true';
+process.env.INDEXEDCP_CLI_MODE = 'true';
 
-const IndexCPClient = require('../lib/client');
+const IndexedCPClient = require('../lib/client');
 
 console.log('\n=== Testing CLI ls Command ===\n');
 
@@ -23,7 +23,7 @@ async function runTest() {
   // Clean up any existing test files and database
   async function cleanup() {
     try {
-      const client = new IndexCPClient();
+      const client = new IndexedCPClient();
       const db = await client.initDB();
       const chunks = await db.getAll(client.storeName);
       for (const chunk of chunks) {

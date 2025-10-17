@@ -1,10 +1,10 @@
 // Example: Server with custom filename generation
-const { IndexCPServer } = require('indexedcp/server');
+const { IndexedCPServer } = require('indexedcp/server');
 const crypto = require('crypto');
 const path = require('path');
 
 // Create server that generates UUID filenames
-const server = new IndexCPServer({
+const server = new IndexedCPServer({
   port: 3000,
   outputDir: './uploads',
   apiKey: 'your-secure-api-key',

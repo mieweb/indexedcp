@@ -582,7 +582,7 @@ Tests cover:
 
 To migrate from unencrypted IndexedCP:
 
-1. **New clients**: Use `EncryptedClient` instead of `IndexCPClient`
+1. **New clients**: Use `EncryptedClient` instead of `IndexedCPClient`
 2. **Server upgrade**: Switch to `EncryptedServer` (backward compatible)
 3. **Database**: New schema (`indexcp-encrypted` vs `indexcp`)
 4. **Gradual rollout**: Both clients can coexist (different DB names)

@@ -1,8 +1,8 @@
 // Example: Client getting server-determined filenames
-const IndexCPClient = require('indexedcp/client');
+const IndexedCPClient = require('indexedcp/client');
 
 async function uploadWithFilenameMapping() {
-  const client = new IndexCPClient();
+  const client = new IndexedCPClient();
   
   // Add files to buffer
   await client.addFile('./document.pdf');

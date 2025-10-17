@@ -2,7 +2,7 @@
 'use strict';
 
 /**
- * Example: IndexCPServer with MongoDB Keystore (Unified API)
+ * Example: IndexedCPServer with MongoDB Keystore (Unified API)
  * 
  * Demonstrates using MongoDB to persist server RSA key pairs
  * across restarts, enabling key rotation without data loss.
@@ -13,10 +13,10 @@
  */
 
 const { MongoClient } = require('mongodb');
-const { IndexCPServer } = require('../lib/server');
+const { IndexedCPServer } = require('../lib/server');
 
 async function main() {
-  console.log('🔐 IndexCPServer with MongoDB Keystore Example (Unified API)\n');
+  console.log('🔐 IndexedCPServer with MongoDB Keystore Example (Unified API)\n');
   
   // Connect to MongoDB
   console.log('📦 Connecting to MongoDB...');
@@ -26,7 +26,7 @@ async function main() {
   console.log('✓ Connected to MongoDB\n');
   
   // Create server with MongoDB keystore and encryption enabled
-  const server = new IndexCPServer({
+  const server = new IndexedCPServer({
     outputDir: './uploads-mongo',
     port: 3000,
     encryption: true,  // Enable encryption support
@@ -73,7 +73,7 @@ async function main() {
   server.close();
   await new Promise(resolve => setTimeout(resolve, 1000));
   
-  const server2 = new IndexCPServer({
+  const server2 = new IndexedCPServer({
     outputDir: './uploads-mongo',
     port: 3001,
     encryption: true,  // Enable encryption support

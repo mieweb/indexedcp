@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // Test different path handling modes
-const { IndexCPServer } = require('../lib/server');
+const { IndexedCPServer } = require('../lib/server');
 const { spawn } = require('child_process');
 const http = require('http');
 const fs = require('fs');
@@ -154,7 +154,7 @@ async function runTests() {
       }
 
       // Start server with specific mode
-      server = new IndexCPServer({
+      server = new IndexedCPServer({
         port: TEST_PORT,
         outputDir: testDir,
         apiKey: API_KEY,
