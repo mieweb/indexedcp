@@ -2,6 +2,9 @@
 // security-test.js
 // Test path traversal and other security vulnerabilities
 
+// Set test mode to use fake-indexeddb
+process.env.INDEXEDCP_TEST_MODE = 'true';
+
 const { IndexedCPServer } = require('../lib/server');
 const http = require('http');
 const fs = require('fs');

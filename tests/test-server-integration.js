@@ -5,6 +5,9 @@
  * Test unified server with encryption enabled
  */
 
+// Set test mode to use fake-indexeddb
+process.env.INDEXEDCP_TEST_MODE = 'true';
+
 const { IndexedCPServer } = require('../lib/server');
 
 async function testEncryptionIntegration() {
