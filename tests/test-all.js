@@ -18,16 +18,18 @@ function log(msg, color = 'reset') {
   console.log(`${colors[color]}${msg}${colors.reset}`);
 }
 
-function runTest(script, name) {
+function runTest(script, name, skipTestMode = false) {
   return new Promise((resolve) => {
     log(`\n${'═'.repeat(70)}`, 'cyan');
     log(`Running: ${name}`, 'bold');
     log('═'.repeat(70) + '\n', 'cyan');
 
+    const env = skipTestMode ? { ...process.env } : { ...process.env, INDEXEDCP_TEST_MODE: 'true' };
+
     const proc = spawn('node', [path.join(__dirname, script)], {
       cwd: path.dirname(__dirname),
       stdio: 'inherit',
-      env: { ...process.env, INDEXEDCP_TEST_MODE: 'true' }
+      env
     });
 
     proc.on('close', (code) => {
@@ -47,6 +49,7 @@ async function runAllTests() {
   log('═'.repeat(70) + '\n', 'yellow');
 
   const tests = [
+    { script: './test-indexeddbshim.js', name: 'IndexedDBShim Integration Test', skipTestMode: true },
     { script: './test-all-examples.js', name: 'Functional Tests' },
     { script: './security-test.js', name: 'Security Tests' },
     { script: './test-restart-persistence.js', name: 'Restart Persistence Tests' },
@@ -57,7 +60,7 @@ async function runAllTests() {
   const results = [];
 
   for (const test of tests) {
-    const result = await runTest(test.script, test.name);
+    const result = await runTest(test.script, test.name, test.skipTestMode);
     results.push(result);
   }
 
