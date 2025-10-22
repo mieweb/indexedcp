@@ -90,18 +90,18 @@ function runNodeScript(code) {
       env: cleanEnv,
       cwd: __dirname,
     });
-
+    
     let stdout = '';
     let stderr = '';
-
+    
     child.stdout.on('data', (data) => {
       stdout += data.toString();
     });
-
+    
     child.stderr.on('data', (data) => {
       stderr += data.toString();
     });
-
+    
     child.on('close', (code) => {
       if (code !== 0) {
         reject(new Error(`Process exited with code ${code}\n${stderr}`));
@@ -116,26 +116,26 @@ async function testRestartPersistence() {
   log('\n════════════════════════════════════════════════════════════', 'cyan');
   log('IndexedCP - Restart Persistence Test', 'cyan');
   log('════════════════════════════════════════════════════════════\n', 'cyan');
-
+  
   let testsPassed = 0;
   let testsFailed = 0;
-
+  
   try {
     // Setup
     log('ℹ Setting up test environment...', 'blue');
     cleanup();
-
+    
     const file1 = createTestFile('restart-test-1.txt', 'Content for file 1 - should persist!');
     const file2 = createTestFile('restart-test-2.txt', 'Content for file 2 - should also persist!');
     const file3 = createTestFile('restart-test-3.txt', 'Content for file 3 - you guessed it, persists!');
 
     log('✓ Test files created', 'green');
-
+    
     // Step 1: Add files to buffer in first process
     log('\n============================================================', 'yellow');
     log('Step 1: Adding files to buffer (Process #1)', 'yellow');
     log('============================================================', 'yellow');
-
+    
     const addScript = `
       const IndexedCPClient = require('${path.join(__dirname, '..', 'lib', 'client.js')}');
       
@@ -151,11 +151,11 @@ async function testRestartPersistence() {
       
       addFiles().catch(console.error);
     `;
-
+    
     const result1 = await runNodeScript(addScript);
     log(result1.stdout.trim(), 'blue');
     log('✓ Files added to buffer', 'green');
-
+    
     // Verify database file exists (IndexedDBShim creates SQLite files)
     if (!fs.existsSync(DB_PATH)) {
       throw new Error('Database file was not created');
@@ -167,7 +167,7 @@ async function testRestartPersistence() {
     log('\n============================================================', 'yellow');
     log('Step 2: Simulating restart (Process #2)', 'yellow');
     log('============================================================', 'yellow');
-
+    
     const readScript = `
       const IndexedCPClient = require('${path.join(__dirname, '..', 'lib', 'client.js')}');
       
@@ -191,39 +191,39 @@ async function testRestartPersistence() {
         process.exit(1);
       });
     `;
-
+    
     const result2 = await runNodeScript(readScript);
     log(result2.stdout.trim(), 'blue');
-
+    
     if (!result2.stdout.includes('Chunks found in buffer: 3')) {
       throw new Error('Chunks were not persisted across restart');
     }
     log('✓ All chunks persisted across restart', 'green');
     testsPassed++;
-
+    
     // Step 3: Upload the persisted files
     log('\n============================================================', 'yellow');
     log('Step 3: Uploading persisted files (Process #3)', 'yellow');
     log('============================================================', 'yellow');
-
+    
     // Start a test server
     const { IndexedCPServer } = require('../lib/server');
     const uploadDir = path.join(TEST_DIR, 'uploads');
     fs.mkdirSync(uploadDir, { recursive: true });
-
-    const server = new IndexedCPServer({
-      port: 3456,
+    
+    const server = new IndexedCPServer({ 
+      port: 3456, 
       outputDir: uploadDir,
       apiKey: 'test-restart-key'
     });
-
+    
     await new Promise((resolve) => {
       server.listen(3456);
       setTimeout(resolve, 500); // Give server time to start
     });
-
+    
     log('✓ Test server started on port 3456', 'green');
-
+    
     const uploadScript = `
       const IndexedCPClient = require('${path.join(__dirname, '..', 'lib', 'client.js')}');
       
@@ -235,19 +235,19 @@ async function testRestartPersistence() {
       
       uploadBuffered().catch(console.error);
     `;
-
+    
     const result3 = await runNodeScript(uploadScript);
     log(result3.stdout.trim(), 'blue');
-
+    
     // Verify files were uploaded
     const uploadedFiles = fs.readdirSync(uploadDir);
     log(`✓ Files uploaded: ${uploadedFiles.join(', ')}`, 'green');
-
+    
     if (uploadedFiles.length !== 3) {
       throw new Error(`Expected 3 uploaded files, found ${uploadedFiles.length}`);
     }
     testsPassed++;
-
+    
     // Verify file contents
     for (const filename of uploadedFiles) {
       const uploadedPath = path.join(uploadDir, filename);
@@ -258,12 +258,12 @@ async function testRestartPersistence() {
     }
     log('✓ All uploaded files have correct content', 'green');
     testsPassed++;
-
+    
     // Verify buffer is cleared after successful upload
     log('\n============================================================', 'yellow');
     log('Step 4: Verifying buffer cleared after upload', 'yellow');
     log('============================================================', 'yellow');
-
+    
     const verifyScript = `
       const IndexedCPClient = require('${path.join(__dirname, '..', 'lib', 'client.js')}');
       
@@ -280,7 +280,7 @@ async function testRestartPersistence() {
       
       verifyCleared().catch(console.error);
     `;
-
+    
     const result4 = await runNodeScript(verifyScript);
     log(result4.stdout.trim(), 'blue');
 
@@ -292,11 +292,11 @@ async function testRestartPersistence() {
     }
     log('✓ Buffer cleared after successful upload', 'green');
     testsPassed++;
-
+    
     // Cleanup
     server.close();
     cleanup();
-
+    
     log('\n════════════════════════════════════════════════════════════', 'cyan');
     log('Test Summary', 'cyan');
     log('════════════════════════════════════════════════════════════', 'cyan');
@@ -304,7 +304,7 @@ async function testRestartPersistence() {
     log(`Passed: ${testsPassed}`, 'green');
     log(`Failed: ${testsFailed}`, testsFailed > 0 ? 'red' : 'green');
     log('════════════════════════════════════════════════════════════\n', 'cyan');
-
+    
     if (testsFailed === 0) {
       log('All restart persistence tests passed! 🎉\n', 'green');
       process.exit(0);
@@ -316,9 +316,9 @@ async function testRestartPersistence() {
     testsFailed++;
     log(`\n✗ Test failed: ${error.message}`, 'red');
     log(error.stack, 'red');
-
+    
     cleanup();
-
+    
     log('\n════════════════════════════════════════════════════════════', 'cyan');
     log('Test Summary', 'cyan');
     log('════════════════════════════════════════════════════════════', 'cyan');
@@ -326,7 +326,7 @@ async function testRestartPersistence() {
     log(`Passed: ${testsPassed}`, 'green');
     log(`Failed: ${testsFailed}`, 'red');
     log('════════════════════════════════════════════════════════════\n', 'cyan');
-
+    
     process.exit(1);
   }
 }
