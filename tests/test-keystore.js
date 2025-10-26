@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 'use strict';
 
+// Set test mode to use fake-indexeddb
+process.env.INDEXEDCP_TEST_MODE = 'true';
+
 const fs = require('fs').promises;
 const path = require('path');
 const { createKeyStore } = require('../lib/keystores');
