@@ -87,15 +87,15 @@ async function runTest() {
   try {
     // Create a test file
     fs.writeFileSync('test-file-1.txt', 'Hello, World!');
-
+    
     // Add it to buffer
     runCommand('node bin/indexcp add test-file-1.txt');
-
+    
     // List it
     const output = runCommand('node bin/indexcp ls');
-
+    
     if (output.includes('Total files: 1') && 
-      output.includes('test-file-1.txt') &&
+        output.includes('test-file-1.txt') &&
         output.includes('1 chunk(s)')) {
       console.log('✓ Test 2 passed: Single file listed correctly\n');
       testsPassed++;
@@ -114,15 +114,15 @@ async function runTest() {
   try {
     // Create another test file
     fs.writeFileSync('test-file-2.txt', 'Another test file');
-
+    
     // Add it to buffer
     runCommand('node bin/indexcp add test-file-2.txt');
-
+    
     // List all files
     const output = runCommand('node bin/indexcp ls');
-
+    
     if (output.includes('Total files: 2') && 
-      output.includes('test-file-1.txt') &&
+        output.includes('test-file-1.txt') &&
         output.includes('test-file-2.txt')) {
       console.log('✓ Test 3 passed: Multiple files listed correctly\n');
       testsPassed++;
@@ -142,15 +142,15 @@ async function runTest() {
     // Create a 3MB file (will be split into 3 chunks)
     const largeBuffer = Buffer.alloc(3 * 1024 * 1024, 'X');
     fs.writeFileSync('test-large.bin', largeBuffer);
-
+    
     // Add it to buffer
     runCommand('node bin/indexcp add test-large.bin');
-
+    
     // List all files
     const output = runCommand('node bin/indexcp ls');
-
+    
     if (output.includes('Total files: 3') && 
-      output.includes('test-large.bin') &&
+        output.includes('test-large.bin') &&
         output.includes('3 chunk(s)')) {
       console.log('✓ Test 4 passed: Multi-chunk file listed correctly\n');
       testsPassed++;
@@ -168,9 +168,9 @@ async function runTest() {
   console.log('Test 5: Verbose mode shows chunk details');
   try {
     const output = runCommand('node bin/indexcp ls -v');
-
+    
     if (output.includes('Chunk 0:') && 
-      output.includes('Chunk 1:') &&
+        output.includes('Chunk 1:') &&
         output.includes('Chunk 2:')) {
       console.log('✓ Test 5 passed: Verbose mode shows chunk details\n');
       testsPassed++;
@@ -188,7 +188,7 @@ async function runTest() {
   console.log('Test 6: --verbose flag works');
   try {
     const output = runCommand('node bin/indexcp ls --verbose');
-
+    
     if (output.includes('Chunk 0:')) {
       console.log('✓ Test 6 passed: --verbose flag works\n');
       testsPassed++;
@@ -206,7 +206,7 @@ async function runTest() {
   console.log('Test 7: "list" alias works');
   try {
     const output = runCommand('node bin/indexcp list');
-
+    
     if (output.includes('Total files:')) {
       console.log('✓ Test 7 passed: "list" alias works\n');
       testsPassed++;
@@ -224,7 +224,7 @@ async function runTest() {
   console.log('Test 8: Size calculations are correct');
   try {
     const output = runCommand('node bin/indexcp ls');
-
+    
     // test-large.bin should show 3072.00 KB (3MB)
     if (output.includes('3072.00 KB')) {
       console.log('✓ Test 8 passed: Size calculations are correct\n');
@@ -243,16 +243,16 @@ async function runTest() {
   console.log('Test 9: Files are sorted alphabetically');
   try {
     const output = runCommand('node bin/indexcp ls');
-
+    
     // Extract file names from output
     const lines = output.split('\n');
     const fileLines = lines.filter(line => line.includes('.txt') || line.includes('.bin'));
-
+    
     // Check order: test-file-1.txt, test-file-2.txt, test-large.bin
     const firstIndex = output.indexOf('test-file-1.txt');
     const secondIndex = output.indexOf('test-file-2.txt');
     const thirdIndex = output.indexOf('test-large.bin');
-
+    
     if (firstIndex < secondIndex && secondIndex < thirdIndex) {
       console.log('✓ Test 9 passed: Files are sorted alphabetically\n');
       testsPassed++;

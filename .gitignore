@@ -163,3 +163,4 @@ __sysdb__.sqlite
 D_*.sqlite
 idb/
 
+.vscode
