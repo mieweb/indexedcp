@@ -12,7 +12,8 @@ The client now uses different storage backends based on the environment:
    - Uses `indexeddbshim` with `better-sqlite3`
    - SQLite-backed persistent storage
    - Data persists across process restarts
-   - Location: `~/.indexcp/` (configurable via IndexedDBShim)
+   - Location: `~/.indexcp/db/` (user home directory)
+   - Falls back to `fake-indexeddb` (in-memory) if IndexedDBShim fails to load
 
 2. **Test Mode** (`NODE_ENV=test` or `INDEXEDCP_TEST_MODE=true`):
    - Uses `fake-indexeddb` (in-memory)
@@ -20,12 +21,7 @@ The client now uses different storage backends based on the environment:
    - No cleanup needed between tests
    - Prevents test pollution
 
-3. **CLI Mode** (`INDEXEDCP_CLI_MODE=true`):
-   - Legacy filesystem-db (JSON files)
-   - Maintains backward compatibility
-   - Used by specific CLI commands
-
-4. **Browser Mode**:
+3. **Browser Mode**:
    - Uses native IndexedDB
    - No changes from previous implementation
 
@@ -41,7 +37,9 @@ The client now uses different storage backends based on the environment:
 
 #### lib/client.js
 - Updated storage initialization to detect environment
-- Production uses IndexedDBShim with SQLite backend
+- Production uses IndexedDBShim with SQLite backend at `~/.indexcp/db/`
+- Directory is automatically created if it doesn't exist
+- Falls back to fake-indexeddb if IndexedDBShim/SQLite is unavailable
 - Tests use fake-indexeddb for speed
 - No changes to encryption logic (encryption layer is independent)
 
@@ -103,13 +101,6 @@ const client = new IndexedCPClient();
 process.env.INDEXEDCP_TEST_MODE = 'true';
 const client = new IndexedCPClient();
 // Uses fake-indexeddb (ephemeral)
-```
-
-### CLI Mode (Legacy)
-```javascript
-process.env.INDEXEDCP_CLI_MODE = 'true';
-const client = new IndexedCPClient();
-// Uses filesystem-db (JSON files)
 ```
 
 ## Migration Notes
