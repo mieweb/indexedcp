@@ -94,6 +94,14 @@
 - [ ] **Accessibility**: ARIA labels and semantic HTML implemented?
 - [ ] **I18N**: User-facing text externalized for translation?
 
+### 🪶 All Changes should be considered for Pull Request Philosophy
+
+* **Smallest viable change**: Always make the smallest change that fully solves the problem.
+* **Fewest files first**: Start with the minimal number of files required.
+* **No sweeping edits**: Broad refactors or multi-module changes must be split or proposed as new components.
+* **Isolated improvements**: If a change grows complex, extract it into a new function, module, or component instead of modifying multiple areas.
+* **Direct requests only**: Large refactors or architectural shifts should only occur when explicitly requested.
+
 ### Before Committing
 1. Run tests: `npm test`
 2. Check for unused code: Review imports and functions
