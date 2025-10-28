@@ -41,7 +41,8 @@ const fs = require('fs');
 const os = require('os');
 
 const TEST_DIR = path.join(__dirname, 'temp-restart-test');
-const DB_PATH = path.join(os.homedir(), '.indexcp', 'db', 'chunks.json');
+const DB_DIR = path.join(os.homedir(), '.indexcp', 'db');
+const DB_PATH = path.join(DB_DIR, '__sysdb__.sqlite');
 
 // Colors for output
 const colors = {
@@ -62,10 +63,10 @@ function cleanup() {
   if (fs.existsSync(TEST_DIR)) {
     fs.rmSync(TEST_DIR, { recursive: true, force: true });
   }
-  
-  // Clean up database
-  if (fs.existsSync(DB_PATH)) {
-    fs.unlinkSync(DB_PATH);
+
+  // Clean up database directory (IndexedDBShim SQLite files)
+  if (fs.existsSync(DB_DIR)) {
+    fs.rmSync(DB_DIR, { recursive: true, force: true });
   }
 }
 
@@ -80,9 +81,14 @@ function createTestFile(filename, content) {
 
 function runNodeScript(code) {
   return new Promise((resolve, reject) => {
+    // Create clean environment - remove test mode to force IndexedDBShim usage
+    const cleanEnv = { ...process.env };
+    delete cleanEnv.NODE_ENV;
+    delete cleanEnv.INDEXEDCP_TEST_MODE;
+
     const child = spawn('node', ['-e', code], {
-      env: { ...process.env, INDEXEDCP_CLI_MODE: 'true' },
-      cwd: __dirname
+      env: cleanEnv,
+      cwd: __dirname,
     });
     
     let stdout = '';
@@ -122,7 +128,7 @@ async function testRestartPersistence() {
     const file1 = createTestFile('restart-test-1.txt', 'Content for file 1 - should persist!');
     const file2 = createTestFile('restart-test-2.txt', 'Content for file 2 - should also persist!');
     const file3 = createTestFile('restart-test-3.txt', 'Content for file 3 - you guessed it, persists!');
-    
+
     log('✓ Test files created', 'green');
     
     // Step 1: Add files to buffer in first process
@@ -150,23 +156,13 @@ async function testRestartPersistence() {
     log(result1.stdout.trim(), 'blue');
     log('✓ Files added to buffer', 'green');
     
-    // Verify database file exists
+    // Verify database file exists (IndexedDBShim creates SQLite files)
     if (!fs.existsSync(DB_PATH)) {
       throw new Error('Database file was not created');
     }
     log(`✓ Database persisted at ${DB_PATH}`, 'green');
     testsPassed++;
-    
-    // Read the database to verify content
-    const dbContent = JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
-    const chunkCount = Array.isArray(dbContent) ? dbContent.length : 0;
-    log(`✓ Database contains ${chunkCount} chunk(s)`, 'green');
-    
-    if (chunkCount !== 3) {
-      throw new Error(`Expected 3 chunks, found ${chunkCount}`);
-    }
-    testsPassed++;
-    
+
     // Step 2: Simulate restart - read from database in new process
     log('\n============================================================', 'yellow');
     log('Step 2: Simulating restart (Process #2)', 'yellow');
@@ -273,11 +269,11 @@ async function testRestartPersistence() {
       
       async function verifyCleared() {
         const client = new IndexedCPClient();
-        const db = await client.db;
+        const db = await client.initDB();
         const tx = db.transaction('chunks', 'readonly');
         const store = tx.objectStore('chunks');
         const chunks = await store.getAll();
-        await tx.done;
+        if (tx.done) await tx.done;
         
         console.log('Chunks remaining: ' + chunks.length);
       }
@@ -287,12 +283,10 @@ async function testRestartPersistence() {
     
     const result4 = await runNodeScript(verifyScript);
     log(result4.stdout.trim(), 'blue');
-    
-    // Check if buffer is empty (either "Chunks remaining: 0" or no database file)
-    const bufferCleared = result4.stdout.includes('Chunks remaining: 0') || 
-                          !fs.existsSync(DB_PATH) ||
-                          JSON.parse(fs.readFileSync(DB_PATH, 'utf8') || '[]').length === 0;
-    
+
+    // Check if buffer is empty (IndexedDBShim: check via script output)
+    const bufferCleared = result4.stdout.includes('Chunks remaining: 0');
+
     if (!bufferCleared) {
       throw new Error('Buffer was not cleared after successful upload');
     }

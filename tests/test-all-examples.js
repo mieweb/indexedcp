@@ -2,6 +2,9 @@
 // test-all-examples.js
 // Comprehensive test script that runs a server and tests all examples
 
+// Set test mode to use fake-indexeddb
+process.env.INDEXEDCP_TEST_MODE = 'true';
+
 const path = require('path');
 const fs = require('fs');
 const { IndexedCPServer } = require('../server');

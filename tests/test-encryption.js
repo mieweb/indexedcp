@@ -4,6 +4,9 @@
  * Tests all acceptance criteria for asymmetric envelope encryption
  */
 
+// Set test mode to use fake-indexeddb
+process.env.INDEXEDCP_TEST_MODE = 'true';
+
 const fs = require('fs');
 const path = require('path');
 const os = require('os');

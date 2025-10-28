@@ -153,3 +153,14 @@ uploads-*/
 # Dead code archive (attic)
 .attic/*
 !.attic/README.md
+
+# IndexedDB SQLite files (IndexedDBShim storage)
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+__sysdb__.sqlite
+D_*.sqlite
+idb/
+
+.vscode

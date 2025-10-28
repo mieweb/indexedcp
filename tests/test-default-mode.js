@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 
+// Set test mode to use fake-indexeddb
+process.env.INDEXEDCP_TEST_MODE = 'true';
+
 // Quick test to verify the default path mode is 'ignore'
 const { IndexedCPServer } = require('../lib/server');
 

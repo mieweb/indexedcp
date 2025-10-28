@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 
+// Set test mode to use fake-indexeddb
+process.env.INDEXEDCP_TEST_MODE = 'true';
+
 // Test full path preservation in ignore mode
 const { IndexedCPServer } = require('../lib/server');
 const http = require('http');

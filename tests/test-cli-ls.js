@@ -8,13 +8,27 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
-// Set CLI mode
-process.env.INDEXEDCP_CLI_MODE = 'true';
+// Remove test mode to force IndexedDBShim usage for persistence
+// This affects: 1) The IndexedCPClient require below, 2) Child processes via runCommand()
+delete process.env.NODE_ENV;
+delete process.env.INDEXEDCP_TEST_MODE;
 
 const IndexedCPClient = require('../lib/client');
 
+const DB_DIR = path.join(os.homedir(), '.indexcp', 'db');
+
 console.log('\n=== Testing CLI ls Command ===\n');
+
+// Helper to run commands without test mode
+// Note: We clean the env again here because child processes get a fresh copy
+function runCommand(cmd) {
+  const cleanEnv = { ...process.env };
+  delete cleanEnv.NODE_ENV;
+  delete cleanEnv.INDEXEDCP_TEST_MODE;
+  return execSync(cmd, { encoding: 'utf-8', env: cleanEnv });
+}
 
 async function runTest() {
   let testsPassed = 0;
@@ -25,15 +39,23 @@ async function runTest() {
     try {
       const client = new IndexedCPClient();
       const db = await client.initDB();
-      const chunks = await db.getAll(client.storeName);
+      const tx = db.transaction(client.storeName, 'readwrite');
+      const store = tx.objectStore(client.storeName);
+      const chunks = await store.getAll();
       for (const chunk of chunks) {
-        await db.delete(client.storeName, chunk.id);
+        await store.delete(chunk.id);
       }
+      if (tx.done) await tx.done;
       console.log('✓ Cleaned up IndexedDB');
     } catch (error) {
       console.log('Note: IndexedDB cleanup skipped (may not exist yet)');
     }
-    
+
+    // Clean up database directory (IndexedDBShim SQLite files)
+    if (fs.existsSync(DB_DIR)) {
+      fs.rmSync(DB_DIR, { recursive: true, force: true });
+    }
+
     // Clean up test files
     ['test-file-1.txt', 'test-file-2.txt', 'test-large.bin'].forEach(file => {
       if (fs.existsSync(file)) {
@@ -46,7 +68,7 @@ async function runTest() {
   console.log('Test 1: List empty buffer');
   try {
     await cleanup();
-    const output = execSync('node bin/indexcp ls', { encoding: 'utf-8' });
+    const output = runCommand('node bin/indexcp ls');
     if (output.includes('No files in buffer')) {
       console.log('✓ Test 1 passed: Empty buffer message displayed\n');
       testsPassed++;
@@ -67,10 +89,10 @@ async function runTest() {
     fs.writeFileSync('test-file-1.txt', 'Hello, World!');
     
     // Add it to buffer
-    execSync('node bin/indexcp add test-file-1.txt', { encoding: 'utf-8' });
+    runCommand('node bin/indexcp add test-file-1.txt');
     
     // List it
-    const output = execSync('node bin/indexcp ls', { encoding: 'utf-8' });
+    const output = runCommand('node bin/indexcp ls');
     
     if (output.includes('Total files: 1') && 
         output.includes('test-file-1.txt') &&
@@ -94,10 +116,10 @@ async function runTest() {
     fs.writeFileSync('test-file-2.txt', 'Another test file');
     
     // Add it to buffer
-    execSync('node bin/indexcp add test-file-2.txt', { encoding: 'utf-8' });
+    runCommand('node bin/indexcp add test-file-2.txt');
     
     // List all files
-    const output = execSync('node bin/indexcp ls', { encoding: 'utf-8' });
+    const output = runCommand('node bin/indexcp ls');
     
     if (output.includes('Total files: 2') && 
         output.includes('test-file-1.txt') &&
@@ -122,10 +144,10 @@ async function runTest() {
     fs.writeFileSync('test-large.bin', largeBuffer);
     
     // Add it to buffer
-    execSync('node bin/indexcp add test-large.bin', { encoding: 'utf-8' });
+    runCommand('node bin/indexcp add test-large.bin');
     
     // List all files
-    const output = execSync('node bin/indexcp ls', { encoding: 'utf-8' });
+    const output = runCommand('node bin/indexcp ls');
     
     if (output.includes('Total files: 3') && 
         output.includes('test-large.bin') &&
@@ -145,7 +167,7 @@ async function runTest() {
   // Test 5: Verbose mode
   console.log('Test 5: Verbose mode shows chunk details');
   try {
-    const output = execSync('node bin/indexcp ls -v', { encoding: 'utf-8' });
+    const output = runCommand('node bin/indexcp ls -v');
     
     if (output.includes('Chunk 0:') && 
         output.includes('Chunk 1:') &&
@@ -165,7 +187,7 @@ async function runTest() {
   // Test 6: --verbose flag (long form)
   console.log('Test 6: --verbose flag works');
   try {
-    const output = execSync('node bin/indexcp ls --verbose', { encoding: 'utf-8' });
+    const output = runCommand('node bin/indexcp ls --verbose');
     
     if (output.includes('Chunk 0:')) {
       console.log('✓ Test 6 passed: --verbose flag works\n');
@@ -183,7 +205,7 @@ async function runTest() {
   // Test 7: list alias
   console.log('Test 7: "list" alias works');
   try {
-    const output = execSync('node bin/indexcp list', { encoding: 'utf-8' });
+    const output = runCommand('node bin/indexcp list');
     
     if (output.includes('Total files:')) {
       console.log('✓ Test 7 passed: "list" alias works\n');
@@ -201,7 +223,7 @@ async function runTest() {
   // Test 8: Size calculations
   console.log('Test 8: Size calculations are correct');
   try {
-    const output = execSync('node bin/indexcp ls', { encoding: 'utf-8' });
+    const output = runCommand('node bin/indexcp ls');
     
     // test-large.bin should show 3072.00 KB (3MB)
     if (output.includes('3072.00 KB')) {
@@ -220,7 +242,7 @@ async function runTest() {
   // Test 9: Files are sorted alphabetically
   console.log('Test 9: Files are sorted alphabetically');
   try {
-    const output = execSync('node bin/indexcp ls', { encoding: 'utf-8' });
+    const output = runCommand('node bin/indexcp ls');
     
     // Extract file names from output
     const lines = output.split('\n');
