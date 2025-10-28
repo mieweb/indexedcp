@@ -26,7 +26,8 @@ function runTest(script, name) {
 
     const proc = spawn('node', [path.join(__dirname, script)], {
       cwd: path.dirname(__dirname),
-      stdio: 'inherit'
+      stdio: 'inherit',
+      env: { ...process.env, INDEXEDCP_TEST_MODE: 'true' }
     });
 
     proc.on('close', (code) => {

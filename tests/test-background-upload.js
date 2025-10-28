@@ -1,3 +1,6 @@
+// Set test mode to use fake-indexeddb
+process.env.INDEXEDCP_TEST_MODE = 'true';
+
 const IndexedCPClient = require('../lib/client');
 const { IndexedCPServer } = require('../lib/server');
 const fs = require('fs');

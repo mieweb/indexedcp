@@ -5,6 +5,8 @@
 
 🔐 **NEW:** [Asymmetric envelope encryption](#-encryption) protects data at rest with per-stream AES keys wrapped by RSA public keys.
 
+📖 **Read our [Philosophy](docs/PHILOSOPHY.md)** to understand why we built IndexedCP and our vision for transaction-safe, encrypted file transfers.
+
 ---
 
 ## Features
