@@ -2,7 +2,7 @@
 
 ## Why IndexedDB?
 
-IndexedCP leverages IndexedDB to provide robust, transaction-safe, and universally available storage for resumable file transfers. While some browser implementations use SQLite as a backing store, IndexedDB offers a consistent API and experience across all platforms—browsers, devices, and server-side JavaScript environments. For Node.js, we use filesystem-backed storage (`~/.indexcp/db/chunks.json`) that provides the same transactional guarantees while persisting uploads across restarts.
+IndexedCP leverages IndexedDB to provide robust, transaction-safe, and universally available storage for resumable file transfers. While some [browser implementations](https://chromium.googlesource.com/chromium/src/%2B/master/content/browser/indexed_db/docs/README.md) use [SQLite as a backing store](https://developer.chrome.com/blog/deprecating-web-sql/), IndexedDB offers a consistent API and experience across all platforms—browsers, devices, and server-side JavaScript environments. For Node.js, we use filesystem-backed storage (`~/.indexcp/db/chunks.json`) that provides the same transactional guarantees while persisting uploads across restarts.
 
 ## The Name: IndexedDB
 
