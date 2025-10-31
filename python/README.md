@@ -6,6 +6,7 @@ A minimal file upload system with no encryption support, ported from Node.js to 
 
 - 🚀 **Minimal Code**: Simple, focused implementation
 - 📦 **Easy Setup**: Standard Python packaging
+- 📝 **Logging**: Centralized logging utility with configurable levels
 
 ## Installation
 
@@ -26,6 +27,29 @@ pip install -r requirements-dev.txt
 ```
 
 ## Quick Start
+
+### Logger Usage
+
+```python
+from indexedcp import create_logger
+
+# Create a logger with default INFO level
+logger = create_logger("IndexedCP.Client")
+logger.info("Client initialized")
+
+# Create a logger with specific level
+logger = create_logger("IndexedCP.Server", level="DEBUG")
+logger.debug("Debug information")
+logger.info("Server started")
+logger.warning("Warning message")
+logger.error("Error occurred")
+
+# Use environment variable for log level
+# Set INDEXEDCP_LOG_LEVEL=DEBUG in your environment
+import os
+os.environ['INDEXEDCP_LOG_LEVEL'] = 'DEBUG'
+logger = create_logger("IndexedCP.Module")
+```
 
 ### Basic Usage (Coming Soon)
 
