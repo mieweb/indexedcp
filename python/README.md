@@ -192,71 +192,158 @@ async def main():
         server_url="http://localhost:3000",
         api_key="your-api-key",
         storage_path="./client-db.sqlite",
-        chunk_size=1024 * 1024  # 1MB chunks
+        chunk_size=1024 * 1024,  # 1MB chunks
+        max_retries=5,  # Maximum retry attempts (default: infinite)
+        initial_retry_delay=1.0,  # Initial retry delay in seconds
+        max_retry_delay=60.0,  # Maximum retry delay in seconds
+        retry_multiplier=2.0  # Exponential backoff multiplier
     )
     
     # Initialize storage
     await client.initialize()
     
     # Add files to upload queue (works offline)
-    await client.add_file("document.pdf", metadata={"user": "alice"})
-    await client.add_file("photo.jpg", metadata={"project": "demo"})
+    await client.add_file("./document.pdf")
+    await client.add_file("./image.jpg")
     
-    # Check buffered files
-    buffered = await client.get_buffered_files()
-    print(f"Buffered files: {len(buffered)}")
+    # Upload all buffered files
+    result = await client.upload_buffered_files()
+    print(f"Upload results: {result}")
     
-    # Upload when online
-    results = await client.upload_buffered_files()
-    print(f"Uploaded: {results}")
-    
-    # Clear completed uploads
-    await client.clear_uploaded_files()
-    
-    # Close storage
+    # Close client
     await client.close()
 
 asyncio.run(main())
 ```
 
-#### Using Client Context Manager
+#### Upload Features
 
+**Retry Logic with Exponential Backoff:**
 ```python
-from indexedcp import IndexedCPClient
+client = IndexedCPClient(
+    server_url="http://localhost:3000",
+    api_key="your-key",
+    max_retries=5,  # Retry up to 5 times
+    initial_retry_delay=1.0,  # Start with 1 second delay
+    max_retry_delay=60.0,  # Cap at 60 seconds
+    retry_multiplier=2.0  # Double delay each time (1s, 2s, 4s, 8s, 16s...)
+)
+```
 
+**Progress Callbacks:**
+```python
+def on_progress(event):
+    print(f"Chunk {event['chunkIndex']} for {event['fileName']}: {event['status']}")
+    if event['status'] == 'failed':
+        print(f"  Retry {event['retryCount']}, next in {event['nextRetryIn']/1000}s")
+
+client = IndexedCPClient(
+    server_url="http://localhost:3000",
+    api_key="your-key",
+    on_upload_progress=on_progress
+)
+```
+
+**Background Upload:**
+```python
+async def main():
+    client = IndexedCPClient(
+        server_url="http://localhost:3000",
+        api_key="your-key"
+    )
+    await client.initialize()
+    
+    # Add files to queue
+    await client.add_file("./large-file.mp4")
+    
+    # Start background upload (non-blocking)
+    await client.start_upload_background(check_interval=5.0)
+    
+    # Do other work while upload happens in background
+    await asyncio.sleep(30)
+    
+    # Stop background upload
+    await client.stop_upload_background()
+    await client.close()
+
+asyncio.run(main())
+```
+
+**Context Manager:**
+```python
 async def main():
     async with IndexedCPClient(
         server_url="http://localhost:3000",
-        api_key="test-key"
+        api_key="your-key"
     ) as client:
-        await client.add_file("document.pdf")
+        await client.add_file("./file.txt")
         await client.upload_buffered_files()
     # Client automatically closed
 
 asyncio.run(main())
 ```
 
-#### Client API
+### Client API
 
 | Method | Description | Returns |
 |--------|-------------|---------|
-| `initialize()` | Setup client storage | `None` |
-| `add_file(filepath, metadata)` | Add file to upload queue with chunking | `Dict` |
-| `get_buffered_files()` | Get list of buffered files | `List[Dict]` |
-| `upload_buffered_files(server_url, on_progress)` | Upload all pending files | `Dict` |
-| `clear_uploaded_files()` | Remove completed uploads from buffer | `int` |
-| `close()` | Close storage connection | `None` |
+| `initialize()` | Setup storage and client | `None` |
+| `add_file(filepath)` | Add file to upload queue | `int` (chunk count) |
+| `upload_buffered_files(server_url)` | Upload all queued files | `Dict[str, str]` |
+| `start_upload_background(server_url, check_interval)` | Start background upload | `None` |
+| `stop_upload_background()` | Stop background upload | `None` |
+| `close()` | Cleanup resources | `None` |
 
-#### Client Configuration Options
+### Configuration Options
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `server_url` | `None` | IndexedCP server URL |
-| `api_key` | `None` | API key for authentication (also reads from `INDEXEDCP_API_KEY` env var) |
-| `storage_path` | `./indexcp-client.db` | SQLite database path for buffering |
-| `chunk_size` | `1048576` (1MB) | Chunk size in bytes |
-| `encryption` | `False` | Enable encryption (not supported yet) |
-| `log_level` | `INFO` | Logging level |
+#### Client Constructor
+
+```python
+IndexedCPClient(
+    server_url=None,           # Server URL for uploads
+    api_key=None,              # API key (or set INDEXEDCP_API_KEY env var)
+    storage_path=None,         # SQLite path (default: ~/.indexcp/db/client.db)
+    chunk_size=1024*1024,      # Chunk size in bytes (default: 1MB)
+    encryption=False,          # Encryption support (not yet implemented)
+    log_level=None,            # Log level (or set INDEXEDCP_LOG_LEVEL env var)
+    max_retries=float('inf'),  # Maximum retry attempts (default: infinite)
+    initial_retry_delay=1.0,   # Initial retry delay in seconds
+    max_retry_delay=60.0,      # Maximum retry delay in seconds
+    retry_multiplier=2.0,      # Exponential backoff multiplier
+    on_upload_progress=None,   # Callback(event) for progress updates
+    on_upload_error=None,      # Callback(error) for errors
+    on_upload_complete=None    # Callback(summary) for completion
+)
+```
+
+## Features
+
+### Upload Functionality
+
+-  **Chunked uploads** with configurable chunk size
+-  **Retry logic** with exponential backoff
+-  **Progress tracking** via callbacks
+-  **Session tracking** for multi-chunk files
+-  **Background upload** with automatic retry
+-  **Error handling** with detailed error history
+-  **Offline support** with SQLite buffering
+-  **Status tracking** (pending → uploaded → confirmed)
+
+### Retry Mechanism
+
+The client implements exponential backoff retry logic:
+
+1. **First failure**: Retry after 1 second (initial_retry_delay)
+2. **Second failure**: Retry after 2 seconds (1 × 2^1)
+3. **Third failure**: Retry after 4 seconds (1 × 2^2)
+4. **Fourth failure**: Retry after 8 seconds (1 × 2^3)
+5. **Continues** until max_retry_delay (60s) or max_retries reached
+
+Each chunk tracks:
+- Retry count
+- Last attempt timestamp
+- Next retry time
+- Error history (last 5 errors)
 
 ## Project Structure
 
@@ -266,7 +353,7 @@ python/
 │   └── indexedcp/          # Main package
 │       ├── __init__.py     # Package exports
 │       ├── logger.py       # Logging utilities
-│       ├── client.py       # Client implementation
+│       ├── client.py       # Client implementation with upload
 │       └── storage/        # Storage abstraction layer
 │           ├── __init__.py
 │           ├── base_storage.py     # Abstract base class
@@ -275,10 +362,11 @@ python/
 │   ├── __init__.py
 │   ├── test_logger.py
 │   ├── test_storage.py
-│   └── test_client_basic.py
-├── docs/                   # Documentation
+│   ├── test_client_basic.py
+│   └── test_client_upload.py      # Upload functionality tests
 ├── examples/               # Example scripts
-│   └── logger_demo.py
+│   ├── logger_demo.py
+│   └── storage_demo.py
 ├── pyproject.toml          # Project metadata
 ├── requirements.txt        # Runtime dependencies
 └── requirements-dev.txt    # Development dependencies
@@ -289,8 +377,32 @@ python/
 ### Run Tests
 
 ```bash
+# Run all tests
 pytest
+
+# Run specific test file
+pytest tests/test_client_upload.py
+
+# Run with verbose output
+pytest -v
+
+# Run with coverage
+pytest --cov=indexedcp
 ```
+
+### Testing Upload Functionality
+
+The upload tests include:
+-  Basic file upload
+-  Retry logic with simulated failures
+-  Progress callbacks
+-  Exponential backoff
+-  Max retries limit
+-  Background upload
+-  Multiple files upload
+-  Chunk ordering
+-  Session tracking
+-  Error history limit
 
 ## Related
 
