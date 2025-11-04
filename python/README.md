@@ -5,10 +5,10 @@ A minimal file upload system with optional storage backends, ported from Node.js
 
 ## Features
 
-- 🚀 **Minimal Code**: Simple, focused implementation
-- 📦 **Easy Setup**: Standard Python packaging
-- 📝 **Logging**: Centralized logging utility with configurable levels
-- 💾 **Pluggable Storage**: Abstract storage layer with SQLite implementation
+- **Minimal Code**: Simple, focused implementation
+- **Easy Setup**: Standard Python packaging
+- **Logging**: Centralized logging utility with configurable levels
+- **Pluggable Storage**: Abstract storage layer with SQLite implementation
 
 ## Installation
 
@@ -98,6 +98,7 @@ async def main():
     # Close storage
     await storage.close()
 
+
 # Run with asyncio
 asyncio.run(main())
 ```
@@ -177,19 +178,85 @@ async def main():
 asyncio.run(main())
 ```
 
-### Basic Usage (Coming Soon)
+### Client Usage
+
+IndexedCP client provides file buffering and upload queue management with SQLite storage for offline operation.
 
 ```python
-from indexedcp import IndexedCPClient, IndexedCPServer
+from indexedcp import IndexedCPClient
+import asyncio
 
-# Server
-server = IndexedCPServer(port=3000)
-await server.start()
+async def main():
+    # Create client with configuration
+    client = IndexedCPClient(
+        server_url="http://localhost:3000",
+        api_key="your-api-key",
+        storage_path="./client-db.sqlite",
+        chunk_size=1024 * 1024  # 1MB chunks
+    )
+    
+    # Initialize storage
+    await client.initialize()
+    
+    # Add files to upload queue (works offline)
+    await client.add_file("document.pdf", metadata={"user": "alice"})
+    await client.add_file("photo.jpg", metadata={"project": "demo"})
+    
+    # Check buffered files
+    buffered = await client.get_buffered_files()
+    print(f"Buffered files: {len(buffered)}")
+    
+    # Upload when online
+    results = await client.upload_buffered_files()
+    print(f"Uploaded: {results}")
+    
+    # Clear completed uploads
+    await client.clear_uploaded_files()
+    
+    # Close storage
+    await client.close()
 
-# Client
-client = IndexedCPClient(server_url="http://localhost:3000")
-await client.upload_file("myfile.txt")
+asyncio.run(main())
 ```
+
+#### Using Client Context Manager
+
+```python
+from indexedcp import IndexedCPClient
+
+async def main():
+    async with IndexedCPClient(
+        server_url="http://localhost:3000",
+        api_key="test-key"
+    ) as client:
+        await client.add_file("document.pdf")
+        await client.upload_buffered_files()
+    # Client automatically closed
+
+asyncio.run(main())
+```
+
+#### Client API
+
+| Method | Description | Returns |
+|--------|-------------|---------|
+| `initialize()` | Setup client storage | `None` |
+| `add_file(filepath, metadata)` | Add file to upload queue with chunking | `Dict` |
+| `get_buffered_files()` | Get list of buffered files | `List[Dict]` |
+| `upload_buffered_files(server_url, on_progress)` | Upload all pending files | `Dict` |
+| `clear_uploaded_files()` | Remove completed uploads from buffer | `int` |
+| `close()` | Close storage connection | `None` |
+
+#### Client Configuration Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `server_url` | `None` | IndexedCP server URL |
+| `api_key` | `None` | API key for authentication (also reads from `INDEXEDCP_API_KEY` env var) |
+| `storage_path` | `./indexcp-client.db` | SQLite database path for buffering |
+| `chunk_size` | `1048576` (1MB) | Chunk size in bytes |
+| `encryption` | `False` | Enable encryption (not supported yet) |
+| `log_level` | `INFO` | Logging level |
 
 ## Project Structure
 
@@ -199,6 +266,7 @@ python/
 │   └── indexedcp/          # Main package
 │       ├── __init__.py     # Package exports
 │       ├── logger.py       # Logging utilities
+│       ├── client.py       # Client implementation
 │       └── storage/        # Storage abstraction layer
 │           ├── __init__.py
 │           ├── base_storage.py     # Abstract base class
@@ -206,7 +274,8 @@ python/
 ├── tests/                  # Test files
 │   ├── __init__.py
 │   ├── test_logger.py
-│   └── test_storage.py
+│   ├── test_storage.py
+│   └── test_client_basic.py
 ├── docs/                   # Documentation
 ├── examples/               # Example scripts
 │   └── logger_demo.py
@@ -227,3 +296,4 @@ pytest
 
 - **Node.js Implementation**: See parent directory for the original implementation
 - **Documentation**: See `../docs/` for detailed guides (shared with Node.js version)
+

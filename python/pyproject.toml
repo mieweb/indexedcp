@@ -26,7 +26,6 @@ classifiers = [
 
 dependencies = [
     "cryptography>=41.0.0",
-    "aiohttp>=3.9.0",
 ]
 
 [project.optional-dependencies]
