@@ -451,7 +451,7 @@ class IndexedCPClient:
             self.logger.info("Background upload already running")
             return
         
-        self.logger.info(f"🚀 Starting background upload (checking every {check_interval}s)")
+        self.logger.info(f" Starting background upload (checking every {check_interval}s)")
         
         # Start background task
         self.background_upload_task = asyncio.create_task(
@@ -561,7 +561,7 @@ class IndexedCPClient:
             if file_count == 0:
                 return
             
-            self.logger.info(f"📤 Background upload: {file_count} file(s) with pending chunks")
+            self.logger.info(f" Background upload: {file_count} file(s) with pending chunks")
             
             # Upload files sequentially
             succeeded = 0

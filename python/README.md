@@ -1,14 +1,17 @@
-````markdown
+
 # IndexedCP - Python Implementation
 
 A minimal file upload system with optional storage backends, ported from Node.js to Python.
 
 ## Features
 
+- **Client & Server**: Complete file transfer system
+- **Path Security**: Three modes (sanitize, ignore, allow-paths)
+- **Chunked Upload**: Support for large file uploads
+- **API Authentication**: Secure API key-based auth
+- **Retry Logic**: Exponential backoff for failed uploads
+- **Offline Support**: SQLite-backed buffering
 - **Minimal Code**: Simple, focused implementation
-- **Easy Setup**: Standard Python packaging
-- **Logging**: Centralized logging utility with configurable levels
-- **Pluggable Storage**: Abstract storage layer with SQLite implementation
 
 ## Installation
 
@@ -29,6 +32,138 @@ pip install -r requirements-dev.txt
 ```
 
 ## Quick Start
+
+### Server Usage
+
+Create a basic upload server with FastAPI:
+
+```python
+from indexedcp import IndexedCPServer
+import uvicorn
+
+# Create server
+server = IndexedCPServer(
+    upload_dir="./uploads",
+    api_keys=["your-secure-api-key"],
+    path_mode="ignore",  # or "sanitize", "allow-paths"
+    port=3000
+)
+
+# Create FastAPI app
+app = server.create_app()
+
+# Run server
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=3000)
+```
+
+#### Server Path Modes
+
+**`ignore` (Default - Unique Filenames)**
+- Generates unique filename with timestamp + random
+- Preserves original path as underscores
+- Best for: Audit trails, traceability
+
+```python
+server = IndexedCPServer(
+    upload_dir="./uploads",
+    path_mode="ignore"
+)
+# Client sends: "reports/2024/data.csv"
+# Server saves: "./uploads/1730728950_a1b2c3d4_reports_2024_data.csv"
+```
+
+**`sanitize` (High Security)**
+- Strips all directory paths
+- Only uses base filename
+- Rejects path separators and traversal attempts
+- Best for: Untrusted clients, public uploads
+
+```python
+server = IndexedCPServer(
+    upload_dir="./uploads",
+    path_mode="sanitize"
+)
+# Client sends: "reports/2024/data.csv"
+# Server saves: "./uploads/data.csv"
+```
+
+**`allow-paths` (Subdirectories)**
+- Allows clients to create subdirectories
+- Still protects against traversal attacks
+- Best for: Trusted clients, organized uploads
+
+```python
+server = IndexedCPServer(
+    upload_dir="./uploads",
+    path_mode="allow-paths"
+)
+# Client sends: "reports/2024/data.csv"
+# Server saves: "./uploads/reports/2024/data.csv"
+```
+
+#### Server Configuration
+
+```python
+IndexedCPServer(
+    upload_dir="./uploads",        # Upload directory path
+    port=3000,                     # Server port
+    api_keys=["key1", "key2"],     # List of valid API keys
+    path_mode="sanitize",          # Path handling mode
+    log_level="INFO",              # Logging level
+    encryption=False               # Encryption (not yet implemented)
+)
+```
+
+#### Server API Methods
+
+```python
+server = IndexedCPServer(upload_dir="./uploads", api_keys=["test-key"])
+
+# Create FastAPI application
+app = server.create_app()
+
+# Get server information
+info = server.get_server_info()
+print(info)
+# {
+#   "port": 3000,
+#   "upload_dir": "./uploads",
+#   "path_mode": "sanitize",
+#   "api_keys_count": 1,
+#   "encryption": False,
+#   "active_sessions": 0
+# }
+
+# Clear upload sessions (for cleanup)
+server.clear_sessions()
+```
+
+#### Server Endpoints
+
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/upload` | POST | Yes | Upload file chunks |
+| `/health` | GET | No | Health check |
+
+**Upload Request:**
+```bash
+curl -X POST http://localhost:3000/upload \
+  -H "Authorization: Bearer your-api-key" \
+  -H "X-Chunk-Index: 0" \
+  -H "X-File-Name: document.pdf" \
+  --data-binary @chunk_0.bin
+```
+
+**Upload Response:**
+```json
+{
+  "message": "Chunk received",
+  "actualFilename": "document.pdf",
+  "chunkIndex": 0,
+  "clientFilename": "document.pdf"
+}
+```
 
 ### Logger Usage
 
@@ -350,27 +485,55 @@ Each chunk tracks:
 ```
 python/
 ├── src/
-│   └── indexedcp/          # Main package
-│       ├── __init__.py     # Package exports
-│       ├── logger.py       # Logging utilities
-│       ├── client.py       # Client implementation with upload
-│       └── storage/        # Storage abstraction layer
+│   └── indexedcp/              # Main package
+│       ├── __init__.py         # Package exports
+│       ├── logger.py           # Logging utilities
+│       ├── client.py           # Client implementation
+│       ├── server.py           # Server implementation
+│       └── storage/            # Storage abstraction layer
 │           ├── __init__.py
 │           ├── base_storage.py     # Abstract base class
 │           └── sqlite_storage.py   # SQLite implementation
-├── tests/                  # Test files
-│   ├── __init__.py
-│   ├── test_logger.py
-│   ├── test_storage.py
-│   ├── test_client_basic.py
-│   └── test_client_upload.py      # Upload functionality tests
-├── examples/               # Example scripts
-│   ├── logger_demo.py
-│   └── storage_demo.py
-├── pyproject.toml          # Project metadata
-├── requirements.txt        # Runtime dependencies
-└── requirements-dev.txt    # Development dependencies
+├── tests/                      # Test files
+│   ├── test_client.py          # Client unit tests
+│   ├── test_server.py          # Server unit tests
+│   └── test_integration.py     # Integration tests (15 tests)
+├── examples/                   # Demo scripts
+│   ├── server_demo.py          # Interactive server demo
+│   ├── client_demo.py          # Interactive client demo
+│   ├── README.md               # Demo documentation
+│   ├── QUICKSTART.md           # Quick command reference
+│   └── DATABASE_STRUCTURE.md   # Database explanation
+├── docs/                       # Documentation
+├── pyproject.toml              # Project metadata
+├── requirements.txt            # Runtime dependencies
+└── requirements-dev.txt        # Development dependencies
 ```
+
+## Running the Demo
+
+See the complete client-server demonstration in action:
+
+```bash
+# Terminal 1 - Start the server
+cd python
+source venv/bin/activate
+python examples/server_demo.py
+
+# Terminal 2 - Run the client demo
+cd python
+source venv/bin/activate
+python examples/client_demo.py
+```
+
+The demo showcases:
+- Simple file upload
+- Multiple files batch upload
+- Large file chunking (3.5MB → 4 chunks)
+- Background upload with auto-retry
+- Database inspection pauses to view stored chunks
+
+For detailed instructions, see `examples/README.md`
 
 ## Development
 
