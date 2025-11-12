@@ -18,7 +18,7 @@ class IndexedCPServer:
     
     def __init__(
         self,
-        upload_dir: str = "./uploads",
+        upload_dir: Optional[str] = None,
         port: int = 3000,
         api_keys: Optional[List[str]] = None,
         path_mode: str = "ignore",
@@ -38,7 +38,7 @@ class IndexedCPServer:
             encryption: Enable encryption (not supported in basic version)
             **options: Additional server options
         """
-        self.upload_dir = Path(upload_dir)
+        self.upload_dir = Path(upload_dir) if upload_dir else Path.cwd()
         self.port = port
         
         # API key setup (generate if not provided)
