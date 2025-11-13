@@ -1,7 +1,17 @@
 
 # IndexedCP - Python Implementation
 
-A file upload system with chunked upload support, offline buffering, and path security modes. Python port of the Node.js implementation.
+A file upload system with chunked upload support, offline buffering, path security modes, and optional encryption. Python port of the Node.js implementation.
+
+## Features
+
+- ✅ Chunked file uploads with SQLite storage
+- ✅ Offline buffering and automatic retry
+- ✅ Path security modes (ignore, sanitize, allow-paths)
+- ✅ Background upload with exponential backoff
+- ✅ RSA-4096 and AES-256-GCM cryptography utilities
+- ✅ Pluggable keystore abstraction (filesystem, etc.)
+- 🚧 Full encryption support (coming soon)
 
 ## Installation
 
@@ -139,6 +149,7 @@ pytest
 
 # Run specific test file
 pytest tests/test_client.py
+pytest tests/test_crypto.py
 
 # Run with verbose output
 pytest -v
@@ -146,6 +157,104 @@ pytest -v
 # Run with coverage
 pytest --cov=indexedcp
 ```
+
+## Cryptography Utilities
+
+The `CryptoUtils` class provides low-level cryptographic primitives for encryption support:
+
+```python
+from indexedcp import CryptoUtils
+
+crypto = CryptoUtils()
+
+# Generate RSA-4096 key pair
+key_pair = crypto.generate_server_key_pair()
+# Returns: {'publicKey': '...', 'privateKey': '...', 'kid': '...'}
+
+# Generate AES-256 session key
+session_key = crypto.generate_session_key()
+
+# Wrap session key with RSA public key (RSA-OAEP-SHA256)
+wrapped_key = crypto.wrap_session_key(session_key, key_pair['publicKey'])
+
+# Unwrap session key with RSA private key
+unwrapped_key = crypto.unwrap_session_key(wrapped_key, key_pair['privateKey'])
+
+# Encrypt data with AES-256-GCM
+metadata = {'sessionId': 'test', 'seq': 1, 'codec': 'raw'}
+encrypted = crypto.encrypt_packet(b"data", session_key, metadata)
+# Returns: {'ciphertext': b'...', 'iv': b'...', 'authTag': b'...', 'aad': b'...'}
+
+# Decrypt data
+decrypted = crypto.decrypt_packet(
+    encrypted['ciphertext'],
+    session_key,
+    encrypted['iv'],
+    encrypted['authTag'],
+    encrypted['aad']
+)
+
+# Serialize for storage (converts bytes to base64 strings)
+serialized = crypto.serialize_packet(encrypted)
+
+# Deserialize from storage
+deserialized = crypto.deserialize_packet(serialized)
+```
+
+**Cryptographic Specifications:**
+- **RSA**: 4096-bit keys with OAEP padding and SHA-256 hash
+- **AES**: 256-bit keys with GCM mode
+- **IV**: 96-bit (12 bytes) random nonce per packet
+- **Auth Tag**: 128-bit (16 bytes) for integrity verification
+- **AAD**: Additional Authenticated Data includes sessionId, seq, codec, timestamp
+
+## Keystore System
+
+The keystore system provides secure storage for RSA key pairs with support for key rotation:
+
+```python
+from indexedcp import create_keystore, CryptoUtils
+
+# Create filesystem keystore
+keystore = create_keystore('filesystem', {
+    'key_store_path': './server-keys'
+})
+await keystore.initialize()
+
+# Generate and save key pair
+crypto = CryptoUtils()
+key_pair = crypto.generate_server_key_pair()
+
+key_data = {
+    'kid': key_pair['kid'],
+    'publicKey': key_pair['publicKey'],
+    'privateKey': key_pair['privateKey'],
+    'createdAt': int(time.time() * 1000),
+    'active': True
+}
+await keystore.save(key_data['kid'], key_data)
+
+# Load key later
+loaded_key = await keystore.load(key_data['kid'])
+
+# List all keys
+all_keys = await keystore.list()
+
+# Delete old keys
+await keystore.delete(old_kid)
+```
+
+**Keystore Features:**
+- **File Permissions**: Keys stored with 0600 permissions (owner read/write only)
+- **Directory Permissions**: Keystore directory uses 0700 (owner read/write/execute only)
+- **Thread Safety**: File locking for concurrent operations
+- **JSON Format**: Keys stored as JSON for easy inspection
+- **Persistence**: Keys survive server restarts
+- **Key Rotation**: Support for multiple key versions
+
+**Supported Keystore Types:**
+- `filesystem` - Store keys as JSON files (default, no external dependencies)
+- Future: `mongodb`, `redis`, custom implementations
 
 ## Related
 
