@@ -6,7 +6,6 @@ A minimal file upload system with optional encryption support.
 from .logger import create_logger
 from .storage import BaseStorage, SQLiteStorage, create_storage
 from .client import IndexedCPClient
-from .server import IndexedCPServer
 from .crypto_utils import CryptoUtils
 from .keystores import BaseKeyStore, FileSystemKeyStore, create_keystore
 
@@ -17,7 +16,6 @@ __all__ = [
     "SQLiteStorage",
     "create_storage",
     "IndexedCPClient",
-    "IndexedCPServer",
     "CryptoUtils",
     "BaseKeyStore",
     "FileSystemKeyStore",

@@ -1,13 +1,14 @@
 
-# IndexedCP - Python Implementation
+# IndexedCP - Python Client
 
-A file upload system with chunked upload support, offline buffering, path security modes, and optional encryption. Python port of the Node.js implementation.
+Python client implementation for IndexedCP with chunked upload support, offline buffering, and optional encryption.
+
+> **Note**: This package provides only the **client** implementation. Use the Node.js server from the parent directory.
 
 ## Features
 
 - ✅ Chunked file uploads with SQLite storage
 - ✅ Offline buffering and automatic retry
-- ✅ Path security modes (ignore, sanitize, allow-paths)
 - ✅ Background upload with exponential backoff
 - ✅ RSA-4096 and AES-256-GCM cryptography utilities
 - ✅ Pluggable keystore abstraction (filesystem, etc.)
@@ -25,31 +26,23 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -e .
 ```
 
-## Usage
+## Quick Start
 
-### Server
+### 1. Start the Node.js Server
 
-```python
-from indexedcp import IndexedCPServer
-import uvicorn
+From the parent directory:
 
-server = IndexedCPServer(
-    upload_dir="./uploads",      # Optional: defaults to current directory
-    api_keys=["your-api-key"],
-    path_mode="ignore",          # "ignore" | "sanitize" | "allow-paths"
-    port=3000
-)
+```bash
+cd ..
+node server.js --port 3000 --apiKey demo-key-12345
 
-app = server.create_app()
-uvicorn.run(app, host="0.0.0.0", port=3000)
+# Or use the CLI
+indexcp server --port 3000 --apiKey demo-key-12345
 ```
 
-**Path Modes:**
-- `ignore` (default): Unique filenames with timestamp (e.g., `1730728950_a1b2c3d4_reports_2024_data.csv`)
-- `sanitize`: Strip all paths, basename only (e.g., `data.csv`)
-- `allow-paths`: Preserve subdirectories (e.g., `reports/2024/data.csv`)
+See [../README.md](../README.md) for server documentation.
 
-### Client
+### 2. Use the Python Client
 
 ```python
 from indexedcp import IndexedCPClient
@@ -57,8 +50,8 @@ import asyncio
 
 async def main():
     client = IndexedCPClient(
-        server_url="http://localhost:3000",
-        api_key="your-api-key",
+        server_url="http://localhost:3000/upload",
+        api_key="demo-key-12345",
         chunk_size=1024 * 1024  # 1MB chunks
     )
     
@@ -77,25 +70,11 @@ await client.start_upload_background(check_interval=5.0)
 await client.stop_upload_background()
 ```
 
-## Configuration
-
-### Server Options
-
-```python
-IndexedCPServer(
-    upload_dir=None,               # Upload directory (default: current directory)
-    port=3000,                     # Server port
-    api_keys=["key1", "key2"],     # Valid API keys (generates one if empty)
-    path_mode="ignore",            # "ignore" | "sanitize" | "allow-paths"
-    log_level="INFO"               # "DEBUG" | "INFO" | "WARN" | "ERROR"
-)
-```
-
-### Client Options
+## Client Configuration
 
 ```python
 IndexedCPClient(
-    server_url="http://localhost:3000",
+    server_url="http://localhost:3000/upload",
     api_key="your-key",            # Or set INDEXEDCP_API_KEY env var
     storage_path=None,             # Default: ~/.indexcp/db/client.db
     chunk_size=1024*1024,          # Chunk size in bytes (1MB default)
@@ -108,51 +87,35 @@ IndexedCPClient(
 )
 ```
 
-## API Endpoints
-
-| Endpoint | Method | Auth | Description |
-|----------|--------|------|-------------|
-| `/upload` | POST | Required | Upload file chunks |
-| `/health` | GET | None | Health check |
-
-**Upload Request:**
-```bash
-curl -X POST http://localhost:3000/upload \
-  -H "Authorization: Bearer your-api-key" \
-  -H "X-Chunk-Index: 0" \
-  -H "X-File-Name: document.pdf" \
-  --data-binary @chunk.bin
-```
-
 ## File Locations
 
 **Client Database:** `~/.indexcp/db/client.db` (SQLite)  
-**Server Uploads:** Current directory (configurable via `upload_dir`)
-
-Path behavior matches Node.js implementation. See [`../docs/PATH-MODES.md`](../docs/PATH-MODES.md) for details.
+**Server Uploads:** Configured in Node.js server (see [../README.md](../README.md))
 
 ## Examples
 
 ```bash
-# Run server demo
+# Terminal 1: Start Node.js server
 python examples/server_demo.py
 
-# Run client demo (in separate terminal)
+# Terminal 2: Upload files with Python client
 python examples/client_demo.py
 ```
+
+The demos use `sanitize` mode for proper chunked upload support, which consolidates multiple chunks into a single file on the server.
 
 ## Testing
 
 ```bash
-# Run all tests
-pytest
+# Run client tests
+pytest tests/test_client.py -v
+pytest tests/test_crypto.py -v
+pytest tests/test_keystore.py -v
 
-# Run specific test file
-pytest tests/test_client.py
-pytest tests/test_crypto.py
-
-# Run with verbose output
-pytest -v
+# Run integration tests (requires Node.js server running)
+# Start server first:
+# node ../server.js --port 9999 --apiKey test-integration-key-12345 --outputDir ./tests/uploads
+pytest tests/test_integration.py -v
 
 # Run with coverage
 pytest --cov=indexedcp
@@ -193,12 +156,6 @@ decrypted = crypto.decrypt_packet(
     encrypted['authTag'],
     encrypted['aad']
 )
-
-# Serialize for storage (converts bytes to base64 strings)
-serialized = crypto.serialize_packet(encrypted)
-
-# Deserialize from storage
-deserialized = crypto.deserialize_packet(serialized)
 ```
 
 **Cryptographic Specifications:**
@@ -210,10 +167,11 @@ deserialized = crypto.deserialize_packet(serialized)
 
 ## Keystore System
 
-The keystore system provides secure storage for RSA key pairs with support for key rotation:
+The keystore system provides secure storage for RSA key pairs:
 
 ```python
 from indexedcp import create_keystore, CryptoUtils
+import time
 
 # Create filesystem keystore
 keystore = create_keystore('filesystem', {
@@ -236,28 +194,31 @@ await keystore.save(key_data['kid'], key_data)
 
 # Load key later
 loaded_key = await keystore.load(key_data['kid'])
-
-# List all keys
-all_keys = await keystore.list()
-
-# Delete old keys
-await keystore.delete(old_kid)
 ```
 
 **Keystore Features:**
 - **File Permissions**: Keys stored with 0600 permissions (owner read/write only)
-- **Directory Permissions**: Keystore directory uses 0700 (owner read/write/execute only)
+- **Directory Permissions**: 0700 (owner read/write/execute only)
 - **Thread Safety**: File locking for concurrent operations
-- **JSON Format**: Keys stored as JSON for easy inspection
-- **Persistence**: Keys survive server restarts
-- **Key Rotation**: Support for multiple key versions
+- **JSON Format**: Keys stored as JSON
+- **Persistence**: Keys survive restarts
 
-**Supported Keystore Types:**
-- `filesystem` - Store keys as JSON files (default, no external dependencies)
-- Future: `mongodb`, `redis`, custom implementations
+## Architecture
+
+This Python implementation provides the **client-side** components:
+- Client for chunked uploads
+- Cryptographic utilities
+- Keystore abstractions
+
+The **server implementation** is in Node.js (parent directory) and provides:
+- HTTP server with FastAPI
+- Path security modes
+- File upload handling
+- See [../README.md](../README.md) for server documentation
 
 ## Related
 
-- **Node.js Implementation**: See parent directory for the original implementation
-- **Documentation**: See `../docs/` for detailed guides (shared with Node.js version)
+- **Node.js Server**: See [../README.md](../README.md) for server setup
+- **Documentation**: See [../docs/](../docs/) for detailed guides
+- **Path Modes**: See [../docs/PATH-MODES.md](../docs/PATH-MODES.md)
 

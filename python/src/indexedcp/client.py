@@ -338,7 +338,7 @@ class IndexedCPClient:
                 retry_display = f"{retry_metadata['retryCount']}/{self.max_retries if self.max_retries != float('inf') else '∞'}"
                 self.logger.warning(
                     f"⚠ Upload failed for {file_name} chunk {chunk_index} "
-                    f"(retry {retry_display}). Next retry in {delay/1000:.0f}s"
+                    f"(retry {retry_display}). Next retry in {delay/1000:.0f}s. Error: {str(error)}"
                 )
                 
                 # Call progress callback
@@ -384,10 +384,14 @@ class IndexedCPClient:
         Returns:
             Response data dictionary or None
         """
+        # Send only the basename in X-File-Name header for server compatibility
+        # (sanitize mode rejects paths with separators)
+        base_name = os.path.basename(file_name)
+        
         headers = {
             'Content-Type': 'application/octet-stream',
             'X-Chunk-Index': str(index),
-            'X-File-Name': file_name,
+            'X-File-Name': base_name,
             'Authorization': f'Bearer {self.api_key}'
         }
         

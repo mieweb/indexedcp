@@ -1,7 +1,17 @@
 """
-Integration tests for IndexedCP client and server.
+Integration tests for IndexedCP Python client with Node.js server.
 
-Tests real client-server interactions with an actual running server.
+Prerequisites:
+    Start the Node.js server before running these tests:
+    
+    # From the root directory
+    cd /path/to/IndexedDB_adithya
+    node server.js --port 9999 --apiKey test-integration-key-12345 --outputDir ./python/tests/uploads
+    
+    # Or use the CLI
+    indexcp server --port 9999 --apiKey test-integration-key-12345 --outputDir ./python/tests/uploads
+
+Note: These tests expect a running Node.js server. The tests will skip if server is not available.
 """
 
 import pytest
@@ -11,75 +21,56 @@ import os
 import shutil
 import time
 from pathlib import Path
-from threading import Thread
-import uvicorn
+import urllib.request
+import urllib.error
 
-from indexedcp.server import IndexedCPServer
 from indexedcp.client import IndexedCPClient
 
 
-# Global server instance for background thread
-_server_instance = None
-_server_thread = None
-
-
-def run_server_in_thread(server, port):
-    """Run FastAPI server in a background thread."""
-    app = server.create_app()
-    config = uvicorn.Config(
-        app,
-        host="127.0.0.1",
-        port=port,
-        log_level="error",  # Reduce noise in tests
-        access_log=False
-    )
-    server_instance = uvicorn.Server(config)
-    server_instance.run()
+def is_server_running(url: str) -> bool:
+    """Check if Node.js server is running."""
+    try:
+        # Try to connect to health endpoint
+        health_url = url.replace('/upload', '/health')
+        req = urllib.request.Request(health_url)
+        urllib.request.urlopen(req, timeout=2)
+        return True
+    except:
+        return False
 
 
 @pytest.fixture(scope="module")
 def test_server():
     """
-    Create and run a test server for the entire test module.
-    Server runs in a background thread.
+    Configuration for Node.js server.
+    Expects server to be running before tests.
     """
-    global _server_instance, _server_thread
-    
-    # Create temporary upload directory
-    temp_dir = tempfile.mkdtemp(prefix="indexedcp_test_")
     test_api_key = "test-integration-key-12345"
     test_port = 9999
+    server_url = f"http://127.0.0.1:{test_port}/upload"
     
-    # Create server instance
-    server = IndexedCPServer(
-        upload_dir=temp_dir,
-        port=test_port,
-        api_keys=[test_api_key],
-        path_mode="ignore",
-        log_level="ERROR"
-    )
+    # Create upload directory for tests
+    upload_dir = Path(__file__).parent / "uploads"
+    upload_dir.mkdir(exist_ok=True)
     
-    # Start server in background thread
-    _server_thread = Thread(
-        target=run_server_in_thread,
-        args=(server, test_port),
-        daemon=True
-    )
-    _server_thread.start()
-    
-    # Wait for server to start
-    time.sleep(2)
+    # Check if server is running
+    if not is_server_running(server_url):
+        pytest.skip(
+            "Node.js server not running. Start server first:\n"
+            f"  node server.js --port {test_port} --apiKey {test_api_key}"
+        )
     
     yield {
-        'server': server,
-        'url': f"http://127.0.0.1:{test_port}/upload",
+        'url': server_url,
         'api_key': test_api_key,
-        'upload_dir': temp_dir
+        'upload_dir': str(upload_dir)
     }
     
-    # Cleanup
+    # Cleanup uploaded files after tests
     try:
-        shutil.rmtree(temp_dir)
+        for file in upload_dir.iterdir():
+            if file.is_file():
+                file.unlink()
     except Exception:
         pass
 
@@ -87,7 +78,6 @@ def test_server():
 @pytest.fixture
 def clean_upload_dir(test_server):
     """Clean upload directory before each test."""
-    # Clear upload directory before test
     upload_dir = Path(test_server['upload_dir'])
     if upload_dir.exists():
         for file in upload_dir.iterdir():
@@ -96,9 +86,6 @@ def clean_upload_dir(test_server):
                     file.unlink()
                 except Exception:
                     pass
-    
-    # Clear server sessions
-    test_server['server'].clear_sessions()
     
     yield
     
