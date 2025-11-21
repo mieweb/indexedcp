@@ -148,10 +148,13 @@ sequenceDiagram
     Note over Client,Server: Repeat for each file or stream
 ```
 
-### API Client
+### Python API
 
+* Check out the [Python Client](python/README.md)
+* pip package coming soon!
+  * Client package
+  * Full package with server and client
 
-### API Server
 
 ---
 
