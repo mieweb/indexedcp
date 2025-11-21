@@ -81,7 +81,7 @@ class SQLiteStorage(BaseStorage):
         
         try:
             self.connection = await asyncio.to_thread(_init)
-            self.logger.info(f"✓ SQLite storage initialized: {self.db_path}")
+            self.logger.info(f"[OK] SQLite storage initialized: {self.db_path}")
         except Exception as error:
             self.logger.error(f"Failed to initialize SQLite storage: {error}")
             raise
@@ -289,7 +289,7 @@ class SQLiteStorage(BaseStorage):
             
             try:
                 await asyncio.to_thread(_close)
-                self.logger.info("✓ SQLite storage closed")
+                self.logger.info("[OK] SQLite storage closed")
             except Exception as error:
                 self.logger.error(f"Error closing SQLite connection: {error}")
             finally:
@@ -325,7 +325,7 @@ class SQLiteStorage(BaseStorage):
         try:
             deleted_count = await asyncio.to_thread(_cleanup)
             if deleted_count > 0:
-                self.logger.info(f"✓ Cleaned up {deleted_count} old entries")
+                self.logger.info(f"[OK] Cleaned up {deleted_count} old entries")
             
             return deleted_count
         except Exception as error:

@@ -6,6 +6,7 @@ Provides pluggable storage backends for key-value persistence.
 
 from .base_storage import BaseStorage
 from .sqlite_storage import SQLiteStorage
+from .encrypted_storage import EncryptedStorage
 
 
 def create_storage(storage_type: str = 'sqlite', **options) -> BaseStorage:
@@ -30,15 +31,18 @@ def create_storage(storage_type: str = 'sqlite', **options) -> BaseStorage:
     
     if storage_type in ('sqlite', 'sql', 'db'):
         return SQLiteStorage(**options)
+    elif storage_type in ('encrypted', 'enc'):
+        return EncryptedStorage(**options)
     else:
         raise ValueError(
             f"Unknown storage type: {storage_type}. "
-            f"Valid types: sqlite"
+            f"Valid types: sqlite, encrypted"
         )
 
 
 __all__ = [
     'BaseStorage',
     'SQLiteStorage',
+    'EncryptedStorage',
     'create_storage'
 ]

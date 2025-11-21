@@ -38,7 +38,7 @@ class FileSystemKeyStore(BaseKeyStore):
             self.key_store_path.mkdir(parents=True, exist_ok=True)
             # Set directory permissions to 0700 (owner read/write/execute only)
             os.chmod(self.key_store_path, stat.S_IRWXU)
-            self.logger.info(f'✓ Filesystem keystore initialized: {self.key_store_path}')
+            self.logger.info(f'[OK] Filesystem keystore initialized: {self.key_store_path}')
         except Exception as error:
             self.logger.error(f'Failed to initialize filesystem keystore: {error}')
             raise

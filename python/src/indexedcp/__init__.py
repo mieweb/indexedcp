@@ -4,7 +4,7 @@ A minimal file upload system with optional encryption support.
 """
 
 from .logger import create_logger
-from .storage import BaseStorage, SQLiteStorage, create_storage
+from .storage import BaseStorage, SQLiteStorage, EncryptedStorage, create_storage
 from .client import IndexedCPClient
 from .crypto_utils import CryptoUtils
 from .keystores import BaseKeyStore, FileSystemKeyStore, create_keystore
@@ -14,6 +14,7 @@ __all__ = [
     "create_logger",
     "BaseStorage",
     "SQLiteStorage",
+    "EncryptedStorage",
     "create_storage",
     "IndexedCPClient",
     "CryptoUtils",

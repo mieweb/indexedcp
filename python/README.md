@@ -7,12 +7,14 @@ Python client implementation for IndexedCP with chunked upload support, offline 
 
 ## Features
 
-- ✅ Chunked file uploads with SQLite storage
-- ✅ Offline buffering and automatic retry
-- ✅ Background upload with exponential backoff
-- ✅ RSA-4096 and AES-256-GCM cryptography utilities
-- ✅ Pluggable keystore abstraction (filesystem, etc.)
-- 🚧 Full encryption support (coming soon)
+- Chunked file uploads with SQLite storage
+- Offline buffering and automatic retry
+- Background upload with exponential backoff
+- **End-to-end encryption with RSA-4096 + AES-256-GCM**
+- Asymmetric envelope encryption (per-stream session keys)
+- Encrypted storage at rest
+- Pluggable keystore abstraction (filesystem, etc.)
+- Compatible with Node.js encrypted server
 
 ## Installation
 
@@ -78,11 +80,14 @@ IndexedCPClient(
     api_key="your-key",            # Or set INDEXEDCP_API_KEY env var
     storage_path=None,             # Default: ~/.indexcp/db/client.db
     chunk_size=1024*1024,          # Chunk size in bytes (1MB default)
+    encryption=False,              # Enable encryption (default: False)
     max_retries=float('inf'),      # Maximum retry attempts
     initial_retry_delay=1.0,       # Initial retry delay (seconds)
     max_retry_delay=60.0,          # Max retry delay (seconds)
     retry_multiplier=2.0,          # Exponential backoff multiplier
     on_upload_progress=callback,   # Progress callback
+    on_upload_error=callback,      # Error callback
+    on_upload_complete=callback,   # Completion callback
     log_level="INFO"
 )
 ```
@@ -92,25 +97,79 @@ IndexedCPClient(
 **Client Database:** `~/.indexcp/db/client.db` (SQLite)  
 **Server Uploads:** Configured in Node.js server (see [../README.md](../README.md))
 
+## Encryption Support
+
+The Python client now supports **end-to-end encryption** compatible with the Node.js server!
+
+### Key Features
+
+- 🔐 **RSA-4096** for key wrapping
+- 🔐 **AES-256-GCM** for data encryption
+- 🔐 **Per-stream ephemeral keys** (unique key per file)
+- 🔐 **Encrypted storage** at rest (SQLite)
+- 🔐 **Offline encryption** (cache public key, encrypt later)
+- 🔐 **Backward compatible** (encryption optional)
+
+### Quick Start with Encryption
+
+1. **Start encrypted server:**
+```bash
+# Terminal 1: Start Node.js server with encryption
+cd ..
+node server.js --encryption
+```
+
+2. **Upload encrypted files:**
+```python
+from indexedcp import IndexedCPClient
+import asyncio
+
+async def main():
+    client = IndexedCPClient(
+        server_url="http://localhost:3000/upload",
+        api_key="your-key",
+        encryption=True  # Enable encryption
+    )
+    
+    await client.initialize()
+    await client.fetch_public_key()  # Fetch once, cached for future use
+    
+    # Files are automatically encrypted before storage
+    session_id = await client.add_file("./sensitive_document.pdf")
+    
+    # Upload encrypted packets to server
+    results = await client.upload_buffered_files()
+    
+    await client.close()
+
+asyncio.run(main())
+```
+
+**See [docs/ENCRYPTION.md](./docs/ENCRYPTION.md) for complete encryption guide.**
+
 ## Examples
 
 ```bash
-# Terminal 1: Start Node.js server
-python examples/server_demo.py
+# Terminal 1: Start server
+python examples/demo_server.py
 
-# Terminal 2: Upload files with Python client
-python examples/client_demo.py
+# Terminal 2: Run client demo
+python examples/demo_client_upload.py
 ```
 
-The demos use `sanitize` mode for proper chunked upload support, which consolidates multiple chunks into a single file on the server.
+See [examples/README.md](examples/README.md) for details.
 
 ## Testing
 
 ```bash
-# Run client tests
-pytest tests/test_client.py -v
-pytest tests/test_crypto.py -v
-pytest tests/test_keystore.py -v
+# Run all tests
+pytest tests/ -v
+
+# Run specific test suites
+pytest tests/test_client.py -v              # Basic client tests
+pytest tests/test_crypto.py -v              # Cryptography tests
+pytest tests/test_keystore.py -v            # Keystore tests
+pytest tests/test_client_encryption.py -v   # Encryption tests (NEW!)
 
 # Run integration tests (requires Node.js server running)
 # Start server first:
@@ -118,7 +177,7 @@ pytest tests/test_keystore.py -v
 pytest tests/test_integration.py -v
 
 # Run with coverage
-pytest --cov=indexedcp
+pytest --cov=indexedcp --cov-report=html
 ```
 
 ## Cryptography Utilities

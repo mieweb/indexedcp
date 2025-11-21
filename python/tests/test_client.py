@@ -88,10 +88,13 @@ class TestClientInitialization:
         assert client.chunk_size == 2048
     
     @pytest.mark.asyncio
-    async def test_encryption_not_supported(self):
-        """Test that encryption raises NotImplementedError."""
-        with pytest.raises(NotImplementedError, match="Encryption not supported"):
-            IndexedCPClient(encryption=True)
+    async def test_encryption_supported(self):
+        """Test that encryption can be enabled."""
+        # Encryption is now supported - should not raise
+        client = IndexedCPClient(encryption=True)
+        assert client.encryption is True
+        assert hasattr(client, 'crypto_utils')
+        assert hasattr(client, 'session_keys')
     
     @pytest.mark.asyncio
     async def test_context_manager(self, test_file):
