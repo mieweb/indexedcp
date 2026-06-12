@@ -6,7 +6,8 @@
   "exports": {
     ".": "./index.js",
     "./client": "./client.js",
-    "./server": "./server.js"
+    "./server": "./server.js",
+    "./lib/*": "./lib/*.js"
   },
   "bin": {
     "indexedcp": "./bin/indexcp"
